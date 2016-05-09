@@ -30,7 +30,7 @@
 				dataType: "json",
 				success: function(counts){
 					$("#general_loading").css('display','none');
-					if (counts === null) {
+					if (counts.length == 0) {
 						var nodata = "<div style='width:100%;height:100%;line-height:500px;text-align:center;overflow: hidden;'>没有找到任何记录<\/div>";
 						$("#general_datas").append(nodata);
 					} else {
@@ -186,7 +186,6 @@
 						        });
 					        chart.render();
 						}
-						
 					}
 				}
 			});

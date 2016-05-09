@@ -20,7 +20,7 @@
 				dataType: "json",
 				success: function(chart_datas) {
 					$("#general_loading").css('display','none');
-					if (chart_datas == null) {
+					if (chart_datas.length == 0) {
 						var nodata = "<div style='width:100%;height:100%;line-height:500px;text-align:center;overflow: hidden;'>没有找到任何记录<\/div>";
 						$("#general_data").append(nodata);
 					} else {
@@ -76,7 +76,7 @@
 				dataType: "json",
 				success: function(chart_datas) {
 					$("#general_loading").css('display','none');
-					if (chart_datas == null) {
+					if (chart_datas.length == 0) {
 						var nodata = "<div style='width:100%;height:100%;line-height:500px;text-align:center;overflow: hidden;'>没有找到任何记录<\/div>";
 						$("#general_datas").append(nodata);
 					} else {
@@ -137,7 +137,7 @@
 				dataType: "json",
 				success: function(area_datas){
 					$("#area_loading").css('display','none');
-					if (area_datas == null) {
+					if (area_datas.length == 0) {
 						$("#area_legend").remove();
 						$("#area_data").remove();
 						var nodata = "<div style='width:100%;height:100%;line-height:300px;text-align:center;overflow: hidden;'>没有找到任何记录<\/div>";
@@ -199,7 +199,7 @@
 				dataType: "json",
 				success: function(from_datas){
 					$("#from_loading").css('display','none');
-					if (from_datas == null) {
+					if (from_datas.length == 0) {
 						$("#from_data").remove();
 						$("#from_legend").remove();
 						var nodata = "<div style='width:100%;height:100%;line-height:300px;text-align:center;overflow: hidden;'>没有找到任何记录<\/div>";
