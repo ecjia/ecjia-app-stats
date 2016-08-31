@@ -9,9 +9,10 @@ class searchengine_model extends Component_Model_Model {
 		$this->table_name = 'searchengine';
 		parent::__construct();
 	}
-
-
-
+	
+	public function searchengine_select($where, $field, $order) {
+		return $this->where($where)->field($field)->order($order)->select();
+	}
 }
 
 // end

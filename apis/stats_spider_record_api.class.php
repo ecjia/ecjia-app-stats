@@ -14,9 +14,9 @@ class stats_spider_record_api extends Component_Event_Api {
         
         if ($spider) {
             $insert_data = array(
-                'date' => RC_Time::local_date('Y-m-d'),
-                'searchengine' => $spider,
-                'count' => 1
+                'date' 			=> RC_Time::local_date('Y-m-d'),
+                'searchengine' 	=> $spider,
+                'count' 		=> 1
             );
             $update_data = array(
                 'count' => `count` + 1

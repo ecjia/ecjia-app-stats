@@ -1,6 +1,8 @@
 <?php
 /**
  * 综合流量统计
+ * @author wutifang
+ * 
 */
 defined('IN_ECJIA') or exit('No permission resources.');
 
@@ -11,8 +13,6 @@ class admin_flow_stats extends ecjia_admin {
 		
         $this->db_stats = RC_Loader::load_app_model('stats_model', 'stats');
         RC_Loader::load_app_func('global', 'stats');
-        RC_Lang::load('statistic');
-        RC_Lang::load('flow_stats');
         
         /* 加载所有全局 js/css */
         RC_Script::enqueue_script('bootstrap-placeholder');
@@ -40,7 +40,12 @@ class admin_flow_stats extends ecjia_admin {
         RC_Script::enqueue_script('from_stats', RC_App::apps_url('statics/js/from_stats.js', __FILE__));
         RC_Script::enqueue_script('flow_stats_chart', RC_App::apps_url('statics/js/flow_stats_chart.js', __FILE__));
         
-        ecjia_screen::get_current_screen()->add_nav_here(new admin_nav_here(__('流量分析'), RC_Uri::url('stats/admin_flow_stats/general_stats')));
+        RC_Script::localize_script('general_stats', 'js_lang', RC_Lang::get('stats::flow_stats.js_lang'));
+        RC_Script::localize_script('area_stats', 'js_lang', RC_Lang::get('stats::flow_stats.js_lang'));
+        RC_Script::localize_script('from_stats', 'js_lang', RC_Lang::get('stats::flow_stats.js_lang'));
+        RC_Script::localize_script('flow_stats_chart', 'js_lang', RC_Lang::get('stats::flow_stats.js_lang'));
+        
+       	ecjia_screen::get_current_screen()->add_nav_here(new admin_nav_here(RC_Lang::get('stats::flow_stats.traffic_analysis'), RC_Uri::url('stats/admin_flow_stats/general_stats')));
 	}
 	
 	/**
@@ -49,73 +54,35 @@ class admin_flow_stats extends ecjia_admin {
 	public function general_stats() {
 		$this->admin_priv('flow_stats', ecjia::MSGTYPE_JSON);
 		
-		ecjia_screen::get_current_screen()->add_nav_here(new admin_nav_here(__('综合访问量')));
+		ecjia_screen::get_current_screen()->add_nav_here(new admin_nav_here(RC_Lang::get('stats::flow_stats.tab_general')));
 		ecjia_screen::get_current_screen()->add_help_tab(array(
 			'id'		=> 'overview',
-			'title'		=> __('概述'),
-			'content'	=>
-			'<p>' . __('欢迎访问ECJia智能后台综合访问量页面，系统上所有的综合访问量信息都会显示在此页面上。') . '</p>'
+			'title'		=> RC_Lang::get('stats::flow_stats.overview'),
+			'content'	=> '<p>' . RC_Lang::get('stats::flow_stats.general_stats_help') . '</p>'
 		));
-		
 		ecjia_screen::get_current_screen()->set_help_sidebar(
-			'<p><strong>' . __('更多信息:') . '</strong></p>' .
-			'<p>' . __('<a href="https://ecjia.com/wiki/帮助:ECJia智能后台:流量分析#.E7.BB.BC.E5.90.88.E8.AE.BF.E9.97.AE.E9.87.8F" target="_blank">关于综合访问量帮助文档</a>') . '</p>'
+			'<p><strong>' . RC_Lang::get('stats::flow_stats.more_info') . '</strong></p>' .
+			'<p>' . __('<a href="https://ecjia.com/wiki/帮助:ECJia智能后台:流量分析#.E7.BB.BC.E5.90.88.E8.AE.BF.E9.97.AE.E9.87.8F" target="_blank">'. RC_Lang::get('stats::flow_stats.about_general_stats') .'</a>') . '</p>'
 		);
 		
-		$this->assign('ur_here', __('综合访问量'));
-		$this->assign('action_link', array('text' => '综合访问量报表下载', 'href' => RC_Uri::url('stats/admin_flow_stats/general_stats_download')));
+		$this->assign('ur_here', RC_Lang::get('stats::flow_stats.tab_general'));
+        $this->assign('action_link', array('text' => RC_Lang::get('stats::flow_stats.down_general'), 'href' => RC_Uri::url('stats/admin_flow_stats/general_stats_download')));
+        $this->assign('ajax_loader', RC_App::apps_url('statics/images/ajax_loader.gif', __FILE__));
+        
+        //按年查询
+		$start_year = !empty($_GET['start_year']) 	? $_GET['start_year'] 	: RC_Time::local_date('Y');
+		$end_year 	= !empty($_GET['end_year']) 	? $_GET['end_year'] 	: '';
 		
-		$is_multi = empty($_GET['is_multi']) ? false : true;
-		$start_year = !empty($_GET['start_year']) ? $_GET['start_year'] : '';
+		//按月查询
+		$start_month = !empty($_GET['start_month'])	? $_GET['start_month'] 	: RC_Time::local_date('Y-m');
+		$end_month   = !empty($_GET['end_month']) 	? $_GET['end_month'] 	: '';
+		$type 		 = !empty($_GET['type']) 		? true 					: false;
 		
-		/*按年查询时间参数*/
-		if (!empty($start_year)) {
-			$filter	= explode('.', $start_year);
-			$arr 	= array_filter($filter);
-			for ($i = 0; $i < count($arr); $i++) {
-				if (!empty($arr[$i])) {
-					$start_year_arr[] = RC_Time::local_strtotime($arr[$i] . '-1');
-				}
-			}
-		} else {
-			$start_year_arr[] = RC_Time::local_strtotime(RC_Time::local_date('Y').'-1-1');
-			$start_year = RC_Time::local_date('Y');
-		}
-		for ($i = 0; $i < 2; $i++) {
-			if (isset($start_year_arr[$i])) {
-				$start_year_arr[$i] = RC_Time::local_date('Y', $start_year_arr[$i]);
-			} else {
-				$start_year_arr[$i] = '';
-			}
-		}
-		$this->assign('start_year_arr', $start_year_arr);
-		
-		$year_month = !empty($_GET['year_month']) ? $_GET['year_month'] : '';
-		/*按月查询时间参数*/
-		if (!empty($year_month)) {
-			$filter	= explode('.', $year_month);
-			$arr 	= array_filter($filter);
-			for ($i = 0; $i < count($arr); $i++) {
-				if (!empty($arr[$i])) {
-					$start_date_arr[] = RC_Time::local_strtotime($arr[$i] . '-1');
-				}
-			}
-		} else {
-			$start_date_arr[] = RC_Time::local_strtotime(RC_Time::local_date('Y-m') . '-1');
-		}
-		
-		for ($i = 0; $i < 2; $i++) {
-			if (isset($start_date_arr[$i])) {
-				$start_date_arr[$i] = RC_Time::local_date('Y-m', $start_date_arr[$i]);
-			} else {
-				$start_date_arr[$i] = '';
-			}
-		}
-		
-		$this->assign('start_date_arr', $start_date_arr);
-		$this->assign('is_multi', $is_multi);
 		$this->assign('start_year', $start_year);
-		$this->assign('year_month', $year_month);
+		$this->assign('end_year', $end_year);
+		$this->assign('start_month', $start_month);
+		$this->assign('end_month', $end_month);
+		$this->assign('type', $type);
 		
 		$this->assign_lang();
 		$this->display('general_stats.dwt');
@@ -128,20 +95,21 @@ class admin_flow_stats extends ecjia_admin {
 		$this->admin_priv('flow_stats', ecjia::MSGTYPE_JSON);
 		$type = !empty($_GET['type']) ? $_GET['type'] : '';
 		
-		ecjia_screen::get_current_screen()->add_nav_here(new admin_nav_here(__('地区分布')));
+        ecjia_screen::get_current_screen()->add_nav_here(new admin_nav_here(RC_Lang::get('stats::flow_stats.tab_area')));
 		ecjia_screen::get_current_screen()->add_help_tab(array(
 			'id'		=> 'overview',
-			'title'		=> __('概述'),
-			'content'	=>
-			'<p>' . __('欢迎访问ECJia智能后台地区分布页面，系统上所有的地区分布信息都会显示在此页面上。') . '</p>'
+			'title'		=> RC_Lang::get('stats::flow_stats.overview'),
+			'content'	=> '<p>' . RC_Lang::get('stats::flow_stats.area_stats_help') . '</p>'
 		));
+		
 		ecjia_screen::get_current_screen()->set_help_sidebar(
-			'<p><strong>' . __('更多信息:') . '</strong></p>' .
-			'<p>' . __('<a href="https://ecjia.com/wiki/帮助:ECJia智能后台:流量分析#.E5.9C.B0.E5.8C.BA.E5.88.86.E5.B8.83" target="_blank">关于地区分布帮助文档</a>') . '</p>'
+			'<p><strong>' . RC_Lang::get('stats::flow_stats.more_info') . '</strong></p>' .
+			'<p>' . __('<a href="https://ecjia.com/wiki/帮助:ECJia智能后台:流量分析#.E5.9C.B0.E5.8C.BA.E5.88.86.E5.B8.83" target="_blank">'. RC_Lang::get('stats::flow_stats.about_area_stats') .'</a>') . '</p>'
 		);
 		
-		$this->assign('ur_here', __('地区分布'));
-		$this->assign('action_link', array('text' => '地区分布报表下载', 'href' => RC_Uri::url('stats/admin_flow_stats/area_stats_download')));
+        $this->assign('ur_here', RC_Lang::get('stats::flow_stats.tab_area'));
+        $this->assign('action_link', array('text' => RC_Lang::get('stats::flow_stats.down_area'), 'href' => RC_Uri::url('stats/admin_flow_stats/area_stats_download')));
+        $this->assign('ajax_loader', RC_App::apps_url('statics/images/ajax_loader.gif', __FILE__));
 		
 		if (empty($type)) {
 			$today = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('today'));
@@ -178,22 +146,22 @@ class admin_flow_stats extends ecjia_admin {
 		$this->admin_priv('flow_stats', ecjia::MSGTYPE_JSON);
 		$type = !empty($_GET['type']) ? $_GET['type'] : '';
 		
-		ecjia_screen::get_current_screen()->add_nav_here(new admin_nav_here(__('来源网站')));
+        ecjia_screen::get_current_screen()->add_nav_here(new admin_nav_here(RC_Lang::get('stats::flow_stats.tab_from')));
 		ecjia_screen::get_current_screen()->add_help_tab(array(
 			'id'		=> 'overview',
-			'title'		=> __('概述'),
-			'content'	=>
-			'<p>' . __('欢迎访问ECJia智能后台来源网站页面，系统上所有的来源网站信息都会显示在此页面上。') . '</p>'
+			'title'		=> RC_Lang::get('stats::flow_stats.overview'),
+			'content'	=> '<p>' . RC_Lang::get('stats::flow_stats.from_stats_help') . '</p>'
 		));
 		
 		ecjia_screen::get_current_screen()->set_help_sidebar(
-			'<p><strong>' . __('更多信息:') . '</strong></p>' .
-			'<p>' . __('<a href="https://ecjia.com/wiki/帮助:ECJia智能后台:流量分析#.E6.9D.A5.E6.BA.90.E7.BD.91.E7.AB.99" target="_blank">关于来源网站帮助文档</a>') . '</p>'
+			'<p><strong>' . RC_Lang::get('stats::flow_stats.more_info') . '</strong></p>' .
+			'<p>' . __('<a href="https://ecjia.com/wiki/帮助:ECJia智能后台:流量分析#.E6.9D.A5.E6.BA.90.E7.BD.91.E7.AB.99" target="_blank">'. RC_Lang::get('stats::flow_stats.about_from_stats') .'</a>') . '</p>'
 		);
 		
-		$this->assign('ur_here', __('来源网站'));
-		$this->assign('action_link', array('text' => '来源网站报表下载', 'href' => RC_Uri::url('stats/admin_flow_stats/from_stats_download')));
-	
+        $this->assign('ur_here', RC_Lang::get('stats::flow_stats.tab_from'));
+        $this->assign('action_link', array('text' => RC_Lang::get('stats::flow_stats.down_from'), 'href' => RC_Uri::url('stats/admin_flow_stats/from_stats_download')));
+        $this->assign('ajax_loader', RC_App::apps_url('statics/images/ajax_loader.gif', __FILE__));
+        
 		if (empty($type)) {
 			$today = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('today'));
 			$start_date = !empty($_GET['start_date']) ? $_GET['start_date'] : RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('-3 days'));
@@ -213,7 +181,7 @@ class admin_flow_stats extends ecjia_admin {
 		}
 		
 		$from_data = $this->get_from_data();
-		
+
 		$from_type = !empty($_GET['from_type']) ? $_GET['from_type'] : '';
 		$this->assign('from_data', $from_data);
 		$this->assign('from_type', $from_type);
@@ -229,124 +197,46 @@ class admin_flow_stats extends ecjia_admin {
 	 * 按年份获取综合访问量图表数据
 	 */
 	public function get_general_chart_data() {
-		$is_multi = empty($_GET['is_multi']) ? false : true;
-		$start_year = !empty($_GET['start_year']) ? $_GET['start_year'] : '';
-		
-		if (!$is_multi) {
-			/*时间参数*/
-			if (!empty($start_year)) {
-				$filter	= explode('.', $start_year);
-				$arr 	= array_filter($filter);
-				
-				for ($i = 0; $i < count($arr); $i++) {
-					if (!empty($arr[$i])) {
-						$start_year_arr[]	= RC_Time::local_mktime(0, 0, 0, 1, 1, $arr[$i]);
-						$end_year_arr[]   	= RC_Time::local_mktime(23, 59, 59, 12, 31, $arr[$i]);
-					}
-				}
-				
-				if (!empty($start_year_arr)) {
-					foreach ($start_year_arr as $k => $v) {
-						$where = "access_time >= '$start_year_arr[$k]' AND access_time <= '$end_year_arr[$k]+86400' ";
-						$general_data[] = $this->db_stats->field('FLOOR((access_time - '.$start_year_arr[$k].') / (24 * 31 * 3600)) AS sn, access_time, COUNT(*) AS access_count')->where($where)->group('sn')->select();
-					}
-				}
-				
-				if (!empty($general_data)) {
-					foreach ($general_data as $key=>$val) {
-						if (empty($val)){
-							unset($general_data[$key]);
-						}
-						if (!empty($val)) {
-							foreach ($val as $k=> $v) {
-								unset($general_data[$key][$k]['sn']);
-								$general_data[$key][$k]['access_time'] = RC_Time::local_date('Y-m', $v['access_time']);
-							}
-						}
-					}
-				}
-				
-				$arr1 = array();
-				if (!empty($general_data)) {
-					foreach ($general_data as $k=>$v) {
-						foreach ($v as $k1=>$v1) {
-							$year = RC_Time::local_date('Y', RC_Time::local_strtotime($v1['access_time']));
-							$month = intval(RC_Time::local_date('m', RC_Time::local_strtotime($v1['access_time'])));
-							$arr1[$year][$month] = $v1;
-						}
-					}
-				}
-				
-				for ($i = 1; $i <= 12; $i++) {
-					$arr2[] = $i;
-				}
-				
-				foreach ($arr1 as $k=>$v) {
-					foreach (array_unique($arr2) as $v1) {
-						if (!array_key_exists($v1, $v)) {
-							foreach ($v as $k1 => $v2) {
-								$arr1[$k][$v1] = array('access_time' => 0, 'access_count' => 0);
-							}
-						}
-					}
-				}
-				
-				$chart_datas = json_encode($arr1);
-				echo $chart_datas;
-			}
-		}
-	}
-	
-	/**
-	 * 按年月获取综合访问量图表数据
-	 */
-	public function get_general_chart_datas () {
-		$year_month = !empty($_GET['year_month']) ? $_GET['year_month'] : '';
-		
-		if (!empty($year_month)) {
-			$filter	= explode('.', $year_month);
-			$arr 	= array_filter($filter);
-			
+		//按年查询
+		$type 		= !empty($_GET['type']) 		? true 					: false;
+		$start_year = !empty($_GET['start_year']) 	? $_GET['start_year'] 	: '';
+		$end_year 	= !empty($_GET['end_year']) 	? $_GET['end_year'] 	: '';
+		$arr 		= array($start_year, $end_year);
+
+		$start_date_arr = $end_date_arr = $general_data = $arr1 = array();
+		if (!$type) {
 			for ($i = 0; $i < count($arr); $i++) {
 				if (!empty($arr[$i])) {
-					$start_date_arr[]	= RC_Time::local_strtotime($arr[$i] . '-1');
-					$day 				= date('t', strtotime($arr[$i]));
-					$end_date_arr[]   	= RC_Time::local_strtotime($arr[$i] .'-'.$day)+28800;
+					$start_year_arr[]	= RC_Time::local_mktime(0, 0, 0, 1, 1, $arr[$i]);
+					$end_year_arr[]   	= RC_Time::local_mktime(23, 59, 59, 12, 31, $arr[$i]);
 				}
 			}
-			
-			foreach ($start_date_arr as $k=>$val) {
-				$where = "access_time>= '$start_date_arr[$k]' AND access_time <= '$end_date_arr[$k]+86400'";
-				$data[] = $this->db_stats->field('FLOOR((access_time - '.$start_date_arr[$k].') / (24 * 3600)) AS sn, access_time, COUNT(*) AS access_count')->where($where)->group('sn')->select();
+			foreach ($start_year_arr as $k => $v) {
+				$where = "access_time >= '$start_year_arr[$k]' AND access_time <= '$end_year_arr[$k]+86400' ";
+				$field = 'FLOOR((access_time - '.$start_year_arr[$k].') / (24 * 31 * 3600)) AS sn, access_time, COUNT(*) AS access_count';
+				$general_data[] = $this->db_stats->stats_select($where, $field, 'sn');
 			}
 			
-			$arr1 = array();
-			if (!empty($data)) {
-				foreach ($data as $key => $val) {
-					if (!$val) {
-						unset($data[$key]);
+			if (!empty($general_data)) {
+				foreach ($general_data as $key => $val) {
+					if (empty($val)){
+						unset($general_data[$key]);
 					}
 					if (!empty($val)) {
-						foreach ($val as $k=> $v) {
-							unset($data[$key][$k]['sn']);
-							$data[$key][$k]['access_time'] = RC_Time::local_date(ecjia::config('date_format'), $v['access_time']);
+						foreach ($val as $k => $v) {
+							$year = RC_Time::local_date('Y', $v['access_time']);
+							$month = intval(RC_Time::local_date('m', $v['access_time']));
+							$arr1[$year][$month] = $v;
+							unset($arr1[$year][$month]['sn']);
 						}
 					}
 				}
-				foreach ($data as $k=>$v) {
-					foreach ($v as $k1=>$v1) {
-						$month = RC_Time::local_date('Y-m', RC_Time::local_strtotime($v1['access_time']));
-						$day = intval(RC_Time::local_date('d', RC_Time::local_strtotime($v1['access_time'])));
-						$arr1[$month][$day] = $v1;
-					}
-				}
 			}
-			
-			for ($i=1; $i<=31; $i++) {
+				
+			for ($i = 1; $i <= 12; $i++) {
 				$arr2[] = $i;
 			}
-			
-			foreach ($arr1 as $k=>$v) {
+			foreach ($arr1 as $k => $v) {
 				foreach (array_unique($arr2) as $v1) {
 					if (!array_key_exists($v1, $v)) {
 						foreach ($v as $k1 => $v2) {
@@ -355,11 +245,67 @@ class admin_flow_stats extends ecjia_admin {
 					}
 				}
 			}
+				
 			$chart_datas = json_encode($arr1);
 			echo $chart_datas;
 		}
 	}
 	
+	public function get_general_chart_datas() {
+		//按月查询
+		$type 		= !empty($_GET['type']) 		? true 					: false;
+		$start_month= !empty($_GET['start_month'])	? $_GET['start_month'] 	: '';
+		$end_month  = !empty($_GET['end_month']) 	? $_GET['end_month'] 	: '';
+		$arr		= array($start_month, $end_month);
+			
+		$start_date_arr = $end_date_arr = $data = $arr1 = array();
+		if ($type) {
+			for ($i = 0; $i < count($arr); $i++) {
+				if (!empty($arr[$i])) {
+					$start_date_arr[]	= RC_Time::local_strtotime($arr[$i] . '-1');
+					$day 				= date('t', strtotime($arr[$i]));
+					$end_date_arr[]   	= RC_Time::local_strtotime($arr[$i] .'-'.$day)+28800;
+				}
+			}
+			foreach ($start_date_arr as $k => $val) {
+				$where = "access_time>= '$start_date_arr[$k]' AND access_time <= '$end_date_arr[$k]+86400'";
+				$field = 'FLOOR((access_time - '.$start_date_arr[$k].') / (24 * 3600)) AS sn, access_time, COUNT(*) AS access_count';
+				$data[] = $this->db_stats->stats_select($where, $field, 'sn');
+			}
+				
+			if (!empty($data)) {
+				foreach ($data as $key => $val) {
+					if (!$val) {
+						unset($data[$key]);
+					}
+					if (!empty($val)) {
+						foreach ($val as $k => $v) {
+							$month = RC_Time::local_date('Y-m', $v['access_time']);
+							$day = intval(RC_Time::local_date('d', $v['access_time']));
+							$arr1[$month][$day] = $v;
+							unset($arr1[$month][$day]['sn']);
+						}
+					}
+				}
+			}
+				
+			for ($i=1; $i<=31; $i++) {
+				$arr2[] = $i;
+			}
+			foreach ($arr1 as $k => $v) {
+				foreach (array_unique($arr2) as $v1) {
+					if (!array_key_exists($v1, $v)) {
+						foreach ($v as $k1 => $v2) {
+							$arr1[$k][$v1] = array('access_time' => 0, 'access_count' => 0);
+						}
+					}
+				}
+			}
+				
+			$chart_datas = json_encode($arr1);
+			echo $chart_datas;
+		}
+	}
 	/**
 	 * 获取地区分布图表数据
 	 */
@@ -367,23 +313,24 @@ class admin_flow_stats extends ecjia_admin {
 		$type = !empty($_GET['type']) ? $_GET['type'] : '';
 		
 		if ($type == 1) {
-			$start_date = RC_Time::local_mktime(0, 0, 0,date('m'), date('d'), date('Y'));
-			$end_date 	= RC_Time::local_mktime(0, 0, 0,date('m'), date('d')+1, date('Y'))-1;
+			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y'));
+			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
 		} elseif ($type == 2) {
-			$start_date = RC_Time::local_mktime(0, 0, 0,date('m'), date('d')-1, date('Y'));
-			$end_date 	= RC_Time::local_mktime(0, 0, 0,date('m'), date('d'), date('Y'))-1;
+			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-1, date('Y'));
+			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y'))-1;
 		} elseif ($type == 3) {
-			$start_date = RC_Time::local_mktime(0, 0, 0,date('m'), date('d')-7, date('Y'));
-			$end_date 	= RC_Time::local_mktime(0, 0, 0,date('m'), date('d')+1, date('Y'))-1;
+			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-7, date('Y'));
+			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
 		} elseif ($type == 4) {
-			$start_date = RC_Time::local_mktime(0, 0, 0,date('m'), date('d')-30, date('Y'));
-			$end_date 	= RC_Time::local_mktime(0, 0, 0,date('m'), date('d')+1, date('Y'))-1;
+			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-30, date('Y'));
+			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
 		} else {
 			$start_date = !empty($_GET['start_date']) ? RC_Time::local_strtotime($_GET['start_date']) : RC_Time::local_strtotime('-3 days');
 			$end_date 	= !empty($_GET['end_date'])   ? RC_Time::local_strtotime($_GET['end_date'])   : RC_Time::local_strtotime('today');
 		}
 		$where = "access_time >= '$start_date' AND access_time <= '$end_date' AND area != '' ";
-		$area_data = $this->db_stats->field('area,COUNT(*) AS access_count')->where($where)->group('area')->order(array('access_count' => 'DESC'))->limit(15)->select();
+		$field = 'area, COUNT(*) AS access_count';
+		$area_data = $this->db_stats->stats_select($where, $field, 'area', array('access_count' => 'DESC'), 15);
 		
 		$arr1 = array();
 		if (!empty($area_data)) {
@@ -425,20 +372,21 @@ class admin_flow_stats extends ecjia_admin {
 		$where = "access_time >= '$start_date' AND access_time <= '$end_date'";
 		//全部来源
 		if ($from_type == 1) {
-			$data = $this->db_stats->field('referer_domain, COUNT(*) AS access_count')->where($where)->group('referer_domain')->order(array('access_count' => 'DESC'))->select();
-			
+			$field = 'referer_domain, COUNT(*) AS access_count';
+			$data = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'));
+
 			$arr1 = array();
 			if (!empty($data)) {
 				foreach ($data as $key => $val) {
 					if (empty($val['referer_domain']) || strpos($val['referer_domain'], 'localhost') || strpos($val['referer_domain'], '127.0.0.1')) {
-						$data[$key]['referer_domain'] = '直接访问';
-					} elseif (strpos($val['referer_domain'], 'baidu') || strpos($val['referer_domain'], 'google') || strpos($val['referer_domain'], 'haosou') || strpos($val['referer_domain'], 'sogou') || strpos($val['referer_domain'], 'bing')) {
-						$data[$key]['referer_domain'] = '搜索引擎';
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.direct_access');
+					} elseif (strpos($val['referer_domain'], 'baidu') || strpos($val['referer_domain'], 'google') || strpos($val['referer_domain'], 'haosou') || strpos($val['referer_domain'], 'sogou') || strpos($val['referer_domain'], RC_Lang::get('stats::flow_stats.bing'))) {
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.search_engine');
 					} else {
-						$data[$key]['referer_domain'] = '外部链接';
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.external_link');
 					}
 				}
-				foreach ($data as $key =>$val) {
+				foreach ($data as $key => $val) {
 					if (isset($data[$key]['referer_domain'])) {
 						$arr1[$val['referer_domain']] = '';
 						$arr1[$val['referer_domain']] += $val['access_count'];
@@ -456,11 +404,13 @@ class admin_flow_stats extends ecjia_admin {
 		//外部链接
 		} elseif ($from_type == 2) {
 			$where .= " AND referer_domain != '' AND referer_domain not like '%www.baidu.com%' AND referer_domain not like '%www.google.com%' AND referer_domain not like '%www.haosou.com%' AND referer_domain not like '%www.sogou.com%' AND referer_domain not like '%www.bing%' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%'";
-			$data = $this->db_stats->field('referer_domain, COUNT(*) AS access_count')->where($where)->group('referer_domain')->order(array('access_count' => 'DESC'))->limit(15)->select();
+			$field = 'referer_domain, COUNT(*) AS access_count';
+			
+			$data = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'), 15);
 			
 			$arr1 = array();
 			if (!empty($data)) {
-				foreach ($data as $key =>$val) {
+				foreach ($data as $key => $val) {
 					if (isset($data[$key]['referer_domain'])) {
 						$arr1[$val['referer_domain']] = '';
 						$arr1[$val['referer_domain']] += $val['access_count'];
@@ -473,24 +423,25 @@ class admin_flow_stats extends ecjia_admin {
 		//搜索引擎
 		} elseif ($from_type == 3) {
 			$where .= " AND referer_domain != '' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%' AND (referer_domain like '%www.baidu.com%' or referer_domain like '%www.google.com%' or referer_domain like '%www.haosou.com%' or referer_domain like '%www.sogou.com%' or referer_domain like '%www.bing%') ";
-			$data = $this->db_stats->field('referer_domain, COUNT(*) AS access_count')->where($where)->group('referer_domain')->order(array('access_count' => 'DESC'))->limit(15)->select();
+			$field = 'referer_domain, COUNT(*) AS access_count';
 			
+			$data = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'), 15);
 			$arr1 = array();
 			if (!empty($data)) {
 				foreach ($data as $key => $val) {
 					if (strpos($val['referer_domain'], 'baidu')) {
-						$data[$key]['referer_domain'] = '百度';
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.baidu');
 					} elseif (strpos($val['referer_domain'], 'google')) {
-						$data[$key]['referer_domain'] = '谷歌';
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.google');
 					} elseif (strpos($val['referer_domain'], 'haosou')) {
-						$data[$key]['referer_domain'] = '好搜';
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.haosou');
 					} elseif (strpos($val['referer_domain'], 'sogou')) {
-						$data[$key]['referer_domain'] = '搜狗';
-					} elseif (strpos($val['referer_domain'], 'bing') || strpos($val['referer_domain'], '有道')) {
-						$data[$key]['referer_domain'] = '其他';
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.sogou');
+					} elseif (strpos($val['referer_domain'], RC_Lang::get('stats::flow_stats.bing')) || strpos($val['referer_domain'], RC_Lang::get('stats::flow_stats.youdao'))) {
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.other');
 					}
 				}
-				foreach ($data as $key =>$val) {
+				foreach ($data as $key => $val) {
 					$arr1[$val['referer_domain']] = '';
 					if (isset($data[$key]['referer_domain'])) {
 						$arr1[$val['referer_domain']] += $val['access_count'];
@@ -512,58 +463,37 @@ class admin_flow_stats extends ecjia_admin {
 		$this->admin_priv('flow_stats', ecjia::MSGTYPE_JSON);
 		
 		/*文件名*/
-		$filename = mb_convert_encoding(RC_Lang::lang('general_statement'), "GBK", "UTF-8");
+		$filename = mb_convert_encoding(RC_Lang::get('stats::flow_stats.general_stats'), "GBK", "UTF-8");
 		
 		header("Content-type: application/vnd.ms-excel; charset=utf-8");
 		header("Content-Disposition: attachment; filename=$filename.xls");
 		
-		/* 时间参数 */
-		if (!empty($_GET['start_year'])) {
-			$filter	= explode('.', $_GET['start_year']);
-			$arr 	= array_filter($filter);
-			
-			for ($i = 0; $i < count($arr); $i++) {
-				if (!empty($arr[$i])) {
-					$start_year_arr[]	= RC_Time::local_mktime(0, 0, 0, 1, 1, $arr[$i]);
-					$end_year_arr[]   	= RC_Time::local_mktime(23, 59, 59, 12, 31, $arr[$i]);
-				}
-			}
-			
-			foreach ($start_year_arr as $k => $v) {
-				$where = "access_time >= '$start_year_arr[$k]' AND access_time <= '$end_year_arr[$k]' ";
-				$general_datas[] = $this->db_stats->field('FLOOR((access_time - '.$start_year_arr[$k].') / (24 * 31 * 3600)) AS sn, access_time, COUNT(*) AS access_count')->where($where)->group('sn')->select();
-			}
-			
-			$arr1 = array();
-			if (!empty($general_datas)) {
-				foreach ($general_datas as $key=>$val) {
-					if (empty($val)) {
-						unset($general_datas[$key]);
-					}
-					foreach ($val as $k=> $v) {
-						unset($general_datas[$key][$k]['sn']);
-						$general_datas[$key][$k]['access_time'] = RC_Time::local_date('Y-m', $v['access_time']);
-					}
-				}
-					
-				foreach ($general_datas as $k => $v) {
-					foreach ($v as $k1 => $v1) {
-						$arr1[RC_Time::local_date('Y', RC_Time::local_strtotime($v1['access_time']))][intval(RC_Time::local_date('m', RC_Time::local_strtotime($v1['access_time'])))] = $v1;
-					}
-				}
+		//按年查询
+		$start_year = !empty($_GET['start_year']) 	? $_GET['start_year'] 	: '';
+		$end_year 	= !empty($_GET['end_year']) 	? $_GET['end_year'] 	: '';
+		$arr 		= array($start_year, $end_year);
+		
+		$start_date_arr = $end_date_arr = $general_data = $arr1 = array();
+		for ($i = 0; $i < count($arr); $i++) {
+			if (!empty($arr[$i])) {
+				$start_year_arr[]	= RC_Time::local_mktime(0, 0, 0, 1, 1, $arr[$i]);
+				$end_year_arr[]   	= RC_Time::local_mktime(23, 59, 59, 12, 31, $arr[$i]);
 			}
 		}
+		foreach ($start_year_arr as $k => $v) {
+			$where = "access_time >= '$start_year_arr[$k]' AND access_time <= '$end_year_arr[$k]+86400' ";
+			$field = 'FLOOR((access_time - '.$start_year_arr[$k].') / (24 * 31 * 3600)) AS sn, access_time, COUNT(*) AS access_count';
+			$general_data[] = $this->db_stats->stats_select($where, $field, 'sn');
+		}
 		
-		$data  = RC_Lang::lang('general_stats') . "\t\n";
-		$data .= RC_Lang::lang('date') . "\t";
-		$data .= "\t";
-		$data .= RC_Lang::lang('access_count') . "\t\n";
+		$data  = RC_Lang::get('stats::flow_stats.tab_general') . "\t\n";
+		$data .= RC_Lang::get('stats::flow_stats.date') . "\t";
+		$data .= RC_Lang::get('stats::flow_stats.access_count') . "\t\n";
 		
-		if (!empty($arr1)) {
-			foreach ($arr1 as $key=>$val) {
-				foreach ($val as $k=>$v) {
-					$data .= $key . "\t";
-					$data .= $v['access_time'] . "\t";
+		if (!empty($general_data)) {
+			foreach ($general_data as $key => $val) {
+				foreach ($val as $k => $v) {
+					$data .= RC_Time::local_date('Y-m-d', $v['access_time']) . "\t";
 					$data .= $v['access_count'] . "\t\n";
 				}
 			}
@@ -579,7 +509,7 @@ class admin_flow_stats extends ecjia_admin {
 		$this->admin_priv('flow_stats', ecjia::MSGTYPE_JSON);
 		$type = !empty($_GET['type']) ? $_GET['type'] : '';
 		
-		$filename = mb_convert_encoding(RC_Lang::lang('area_statement'), "GBK", "UTF-8");
+		$filename = mb_convert_encoding(RC_Lang::get('stats::flow_stats.area_stats'), "GBK", "UTF-8");
 		header("Content-type: application/vnd.ms-excel; charset=utf-8");
 		header("Content-Disposition: attachment; filename=$filename.xls");
 		
@@ -597,16 +527,17 @@ class admin_flow_stats extends ecjia_admin {
 			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-30, date('Y'));
 			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
 		} else {
-			$start_date = !empty($_GET['start_date']) ? RC_Time::local_strtotime($_GET['start_date']) : '';
-			$end_date 	= !empty($_GET['end_date']) ? RC_Time::local_strtotime($_GET['end_date']) : '';
+			$start_date = RC_Time::local_strtotime($_GET['start_date']);
+			$end_date 	= RC_Time::local_strtotime($_GET['end_date']);
 		}
 		
 		$where = "access_time >= '$start_date' AND access_time <= '$end_date' AND area != '' ";
-		$area_data = $this->db_stats->field('area,COUNT(*) AS access_count')->where($where)->group('area')->order(array('access_count' => 'DESC'))->limit(15)->select();
+		$field = 'area, COUNT(*) AS access_count';
+		$area_data = $this->db_stats->stats_select($where, $field, 'area', array('access_count' => 'DESC'), 15);
 		
 		$arr1 = array();
 		if (!empty($area_data)) {
-			foreach ($area_data as $key=>$val) {
+			foreach ($area_data as $key => $val) {
 				if (isset($val['area'])) {
 					$arr1[$val['area']] = '';
 					$arr1[$val['area']] += $val['access_count'];
@@ -614,12 +545,12 @@ class admin_flow_stats extends ecjia_admin {
 			}
 		}
 		
-		$data .= RC_Lang::lang('area_stats') . "\t\n";
-		$data .= RC_Lang::lang('area') . "\t";
-		$data .= RC_Lang::lang('access_count') . "\t\n";
-
+		$data = RC_Lang::get('stats::flow_stats.tab_area') . "\t\n";
+		$data .= RC_Lang::get('stats::flow_stats.area') . "\t";
+		$data .= RC_Lang::get('stats::flow_stats.access_count') . "\t\n";
+		
 		if (!empty($arr1)) {
-			foreach ($arr1 as $key=>$val) {
+			foreach ($arr1 as $key => $val) {
 				$data .= $key . "\t";
 				$data .= $val . "\t\n";
 			}
@@ -635,7 +566,7 @@ class admin_flow_stats extends ecjia_admin {
 		$this->admin_priv('flow_stats', ecjia::MSGTYPE_JSON);
 		
 		/*文件名*/
-		$filename = mb_convert_encoding(RC_Lang::lang('from_statement'), "GBK", "UTF-8");
+		$filename = mb_convert_encoding(RC_Lang::get('stats::flow_stats.from_stats'), "GBK", "UTF-8");
 		header("Content-type: application/vnd.ms-excel; charset=utf-8");
 		header("Content-Disposition: attachment; filename=$filename.xls");
 		
@@ -664,22 +595,23 @@ class admin_flow_stats extends ecjia_admin {
 		$data = '';
 		//全部来源
 		if ($from_type == 1) {
-			$arr = $this->db_stats->field('referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count')->where($where)->group('referer_domain')->order(array('access_count' => 'DESC'))->select();
+			$field = 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count';
+			$arr = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'));
 			
 			$count = '';
 			if (!empty($arr)) {
 				foreach ($arr as $key => $val) {
 					if (empty($val['referer_domain']) || strpos($val['referer_domain'], 'localhost') || strpos($val['referer_domain'], '127.0.0.1')) {
-						$arr[$key]['referer_domain'] = '直接访问';
-					} elseif (strpos($val['referer_domain'], 'baidu') || strpos($val['referer_domain'], 'google') || strpos($val['referer_domain'], 'haosou') || strpos($val['referer_domain'], 'sogou') || strpos($val['referer_domain'], 'bing')) {
-						$arr[$key]['referer_domain'] = '搜索引擎';
+						$arr[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.direct_access');
+					} elseif (strpos($val['referer_domain'], 'baidu') || strpos($val['referer_domain'], 'google') || strpos($val['referer_domain'], 'haosou') || strpos($val['referer_domain'], 'sogou') || strpos($val['referer_domain'], RC_Lang::get('stats::flow_stats.bing'))) {
+						$arr[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.search_engine');
 					} else {
-						$arr[$key]['referer_domain'] = '外部链接';
+						$arr[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.external_link');
 					}
 					$count += $val['access_count'];
 				}
 				
-				foreach ($arr as $key =>$val) {
+				foreach ($arr as $key => $val) {
 					if (!isset($arr1[$val['referer_domain']])) {
 						$arr1[$val['referer_domain']] = '';
 						$arr1[$val['referer_domain']] = $val;
@@ -687,64 +619,66 @@ class admin_flow_stats extends ecjia_admin {
 						$arr1[$val['referer_domain']]['access_count'] = '';
 						$arr1[$val['referer_domain']]['visit_count'] = '';
 						
-						$arr1[$val['referer_domain']]['access_count'] += $val['access_count'];
-						$arr1[$val['referer_domain']]['visit_count'] += $val['visit_count'];
+						$arr1[$val['referer_domain']]['access_count'] 	+= $val['access_count'];
+						$arr1[$val['referer_domain']]['visit_count']  	+= $val['visit_count'];
 					}
-					$arr1[$val['referer_domain']]['percent'] = (round($arr1[$val['referer_domain']]['access_count'] / $count, 4))*100 .'%';
+					$arr1[$val['referer_domain']]['percent'] = (round($arr1[$val['referer_domain']]['access_count'] / $count,4))*100 .'%';
 				}
 			}
 			
-			$data .= RC_Lang::lang('from_stats') . "\t\n";
-			$data .= '来源类型' . "\t";
-			$data .= RC_Lang::lang('access_count') . "\t";
-			$data .= '浏览量占比' . "\t";
-			$data .= '访问次数' . "\t\n";
+			$data .= RC_Lang::get('stats::flow_stats.tab_from') . "\t\n";
+			$data .= RC_Lang::get('stats::flow_stats.from_type') . "\t";
+			$data .= RC_Lang::get('stats::flow_stats.access_count') . "\t";
+			$data .= RC_Lang::get('stats::flow_stats.pageviews_account') . "\t";
+			$data .= RC_Lang::get('stats::flow_stats.visits') . "\t\n";
 
 		//外部链接
 		} elseif ($from_type == 2) {
 			$where .= " AND referer_domain != '' AND referer_domain not like '%baidu%' AND referer_domain not like '%google%' AND referer_domain not like '%haosou%' AND referer_domain not like '%sogou%' AND referer_domain not like '%bing%' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%'";
-			$arr1 = $this->db_stats->field('referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count')->where($where)->group('referer_domain')->order(array('access_count' => 'DESC'))->select();
+			$field = 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count';
 			
+			$arr1 = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'));
 			$counts = '';
 			if (!empty($arr1)) {
 				foreach ($arr1 as $k => $v) {
 					$counts += $v['access_count'];
 				}
 				foreach ($arr1 as $k => $v) {
-					$arr1[$k]['percent'] = (round($v['access_count'] / $counts, 4))*100 .'%';
+					$arr1[$k]['percent'] = (round($v['access_count'] / $counts,4))*100 .'%';
 				}
 			}
 			
-			$data .= "\n" . RC_Lang::lang('from_stats') . "\t\n";
-			$data .= '来源网站' . "\t";
-			$data .= RC_Lang::lang('access_count') . "\t";
-			$data .= '浏览量占比' . "\t";
-			$data .= '访问次数' . "\t\n";
+			$data .= "\n" . RC_Lang::get('stats::flow_stats.tab_from') . "\t\n";
+			$data .= RC_Lang::get('stats::flow_stats.tab_from') . "\t";
+			$data .= RC_Lang::get('stats::flow_stats.access_count') . "\t";
+			$data .= RC_Lang::get('stats::flow_stats.pageviews_account') . "\t";
+			$data .= RC_Lang::get('stats::flow_stats.visits') . "\t\n";
 
 		//搜索引擎
 		} elseif ($from_type == 3) {
 			$where .= " AND referer_domain != '' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%' AND (referer_domain like '%www.baidu.com%' or referer_domain like '%www.google.com%' or referer_domain like '%www.haosou.com%' or referer_domain like '%www.sogou.com%' or referer_domain like '%www.bing%') ";
-			$data = $this->db_stats->field('referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count')->where($where)->group('referer_domain')->order(array('access_count' => 'DESC'))->select();
-				
+			$field = 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count';
+			
+			$data = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'));
 			$arr1 = array();
 			$count = '';
 			if (!empty($data)) {
 				foreach ($data as $key => $val) {
 					if (strpos($val['referer_domain'], 'baidu')) {
-						$data[$key]['referer_domain'] = '百度';
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.baidu');
 					} elseif (strpos($val['referer_domain'], 'google')) {
-						$data[$key]['referer_domain'] = '谷歌';
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.google');
 					} elseif (strpos($val['referer_domain'], 'haosou')) {
-						$data[$key]['referer_domain'] = '好搜';
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.haosou');
 					} elseif (strpos($val['referer_domain'], 'sogou')) {
-						$data[$key]['referer_domain'] = '搜狗';
-					} elseif (strpos($val['referer_domain'], 'bing') || strpos($val['referer_domain'], '有道')) {
-						$data[$key]['referer_domain'] = '其他';
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.sogou');
+					} elseif (strpos($val['referer_domain'], RC_Lang::get('stats::flow_stats.bing')) || strpos($val['referer_domain'], RC_Lang::get('stats::flow_stats.youdao'))) {
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.other');
 					}
 					$count += $val['access_count'];
 				}
 					
-				foreach ($data as $key =>$val) {
+				foreach ($data as $key => $val) {
 					if (!isset($arr1[$val['referer_domain']])) {
 						$arr1[$val['referer_domain']] = '';
 						$arr1[$val['referer_domain']] = $val;
@@ -755,19 +689,19 @@ class admin_flow_stats extends ecjia_admin {
 				}
 			}
 			
-			foreach ($arr1 as $k=>$v) {
-				$arr1[$k]['percent'] = (round($v['access_count'] / $count, 4))*100 .'%';
+			foreach ($arr1 as $k => $v) {
+				$arr1[$k]['percent'] = (round($v['access_count'] / $count,4))*100 .'%';
 			}
 			
-			$data .= "\n" . RC_Lang::lang('from_stats') . "\t\n";
-			$data .= '搜索引擎' . "\t";
-			$data .= RC_Lang::lang('access_count') . "\t";
-			$data .= '浏览量占比' . "\t";
-			$data .= '访问次数' . "\t\n";
+			$data .= "\n" . RC_Lang::get('stats::flow_stats.tab_from') . "\t\n";
+			$data .= RC_Lang::get('stats::flow_stats.search_engine') . "\t";
+			$data .= RC_Lang::get('stats::flow_stats.access_count') . "\t";
+			$data .= RC_Lang::get('stats::flow_stats.pageviews_account') . "\t";
+			$data .= RC_Lang::get('stats::flow_stats.visits') . "\t\n";
 		}
 		
 		if (!empty($arr1)) {
-			foreach ($arr1 as $key=>$val) {
+			foreach ($arr1 as $key => $val) {
 				$data .= $val['referer_domain'] . "\t";
 				$data .= $val['access_count'] . "\t";
 				$data .= $val['percent'] . "\t";
@@ -778,8 +712,164 @@ class admin_flow_stats extends ecjia_admin {
 		exit;
 	}
 	
+	/**
+	 * 获取地区分布数据
+	 * */
+	private function get_area_data() {
+		$db_stats = RC_Loader::load_app_model('stats_model', 'stats');
+		
+		$type = !empty($_GET['type']) ? $_GET['type'] : '';
+	
+		if ($type == 1) {
+			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y'));
+			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
+		} elseif ($type == 2) {
+			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-1, date('Y'));
+			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y'))-1;
+		} elseif ($type == 3) {
+			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-7, date('Y'));
+			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
+		} elseif ($type == 4) {
+			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-30, date('Y'));
+			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
+		} else {
+			$start_date = !empty($_GET['start_date']) ? RC_Time::local_strtotime($_GET['start_date']) : RC_Time::local_strtotime('-3 days');
+			$end_date 	= !empty($_GET['end_date'])   ? RC_Time::local_strtotime($_GET['end_date'])   : RC_Time::local_strtotime('today');
+		}
+		$where = "access_time >= '$start_date' AND access_time <= '$end_date'  AND area != '' ";
+		$area_data = $db_stats->stats_select($where, 'area, COUNT(*) AS access_count', 'area', array('access_count' => 'DESC'));
+		$count = count($area_data);
+		$page = new ecjia_page($count, 20, 5);
+	
+		$area_datas = $db_stats->stats_select($where, 'area, COUNT(*) AS access_count', 'area', array('access_count' => 'DESC'), $page->limit());
+		$row = array('item' => $area_datas, 'page' => $page->show(5), 'desc' => $page->page_desc(), 'current_page' => $page->current_page);
+		return $row;
+	}
+	
+	/**
+	 * 按年份获取来源网站数据
+	 */
+	private function get_from_data() {
+		$db_stats = RC_Loader::load_app_model('stats_model', 'stats');
+		
+		$type = !empty($_GET['type']) ? $_GET['type'] : '';
+		$from_type = !empty($_GET['from_type']) ? $_GET['from_type'] : 1;
+	
+		if ($type == 1) {
+			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y'));
+			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
+		} elseif ($type == 2) {
+			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-1, date('Y'));
+			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y'))-1;
+		} elseif ($type == 3) {
+			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-7, date('Y'));
+			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
+		} elseif ($type == 4) {
+			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-30, date('Y'));
+			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
+		} elseif (empty($type)) {
+			$start_date = !empty($_GET['start_date']) ? RC_Time::local_strtotime($_GET['start_date']) : RC_Time::local_strtotime('-3 days');
+			$end_date 	= !empty($_GET['end_date'])   ? RC_Time::local_strtotime($_GET['end_date'])   : RC_Time::local_strtotime('today');
+		}
+	
+		$where = "access_time >= '$start_date' AND access_time <= '$end_date'";
+		//全部来源
+		if ($from_type == 1) {
+			$from_datas = $db_stats->stats_select($where, 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count', 'referer_domain', array('access_count' => 'DESC'));
+			$count = '';
+			if (!empty($from_datas)) {
+				foreach ($from_datas as $key => $val) {
+					if (empty($val['referer_domain']) || strpos($val['referer_domain'], 'localhost') || strpos($val['referer_domain'], '127.0.0.1')) {
+						$from_datas[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.direct_access');
+					} elseif (strpos($val['referer_domain'], 'baidu') || strpos($val['referer_domain'], 'google') || strpos($val['referer_domain'], 'haosou') || strpos($val['referer_domain'], 'sogou') || strpos($val['referer_domain'], RC_Lang::get('stats::flow_stats.bing'))) {
+						$from_datas[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.search_engine');
+					} else {
+						$from_datas[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.external_link');
+					}
+					$count += $val['access_count'];
+				}
+			}
+	
+			$arr = array();
+			$arr1 = array();
+			if (!empty($from_datas)) {
+				foreach ($from_datas as $key => $val) {
+					if (!isset($arr1[$val['referer_domain']])) {
+						$arr1[$val['referer_domain']] = $val;
+					} else {
+						$arr1[$val['referer_domain']]['access_count'] = '';
+						$arr1[$val['referer_domain']]['visit_count'] = '';
+						$arr1[$val['referer_domain']]['access_count'] 	+= $val['access_count'];
+						$arr1[$val['referer_domain']]['visit_count']  	+= $val['visit_count'];
+					}
+					$arr1[$val['referer_domain']]['percent'] = (round($arr1[$val['referer_domain']]['access_count'] / $count,4))*100 .'%';
+				}
+				$arr = $this->array_sort($arr1, 'access_count', SORT_DESC);
+			}
+			return array('item' => $arr);
+		} elseif ($from_type == 2) {
+			$where .= " AND referer_domain != '' AND referer_domain not like '%baidu%' AND referer_domain not like '%google%' AND referer_domain not like '%haosou%' AND referer_domain not like '%sogou%' AND referer_domain not like '%bing%' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%'";
+			$from_datas = $db_stats->stats_select($where, 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count', 'referer_domain', array('access_count' => 'DESC'));
+			$count = '';
+			if (!empty($from_datas)) {
+				$counts = 0;
+				foreach ($from_datas as $k => $v) {
+					$counts += $v['access_count'];
+				}
+				$count = count($from_datas);
+			}
+	
+			$page = new ecjia_page($count, 20, 5);
+			$arr1 = $db_stats->stats_select($where, 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count', 'referer_domain', array('access_count' => 'DESC'), $page->limit());
+			if (!empty($arr1)) {
+				foreach ($arr1 as $k => $v) {
+					$arr1[$k]['percent'] = (round($v['access_count'] / $counts,4))*100 .'%';
+				}
+			}
+	
+			return array('item' => $arr1, 'page' => $page->show(5), 'desc' => $page->page_desc(), 'current_page' => $page->current_page);
+	
+		} elseif ($from_type == 3) {
+			$where .= " AND referer_domain != '' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%' AND (referer_domain like '%www.baidu.com%' or referer_domain like '%www.google.com%' or referer_domain like '%www.haosou.com%' or referer_domain like '%www.sogou.com%' or referer_domain like '%www.bing%') ";
+			$data = $db_stats->stats_select($where, 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count', 'referer_domain', array('access_count' => 'DESC'), 15);
+			$arr1 = array();
+			if (!empty($data)) {
+				$count = 0;
+				foreach ($data as $key => $val) {
+					if (strpos($val['referer_domain'], 'baidu')) {
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.baidu');
+					} elseif (strpos($val['referer_domain'], 'google')) {
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.google');
+					} elseif (strpos($val['referer_domain'], 'haosou')) {
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.haosou');
+					} elseif (strpos($val['referer_domain'], 'sogou')) {
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.sogou');
+					} elseif (strpos($val['referer_domain'], RC_Lang::get('stats::flow_stats.bing')) || strpos($val['referer_domain'], RC_Lang::get('stats::flow_stats.youdao'))) {
+						$data[$key]['referer_domain'] = RC_Lang::get('stats::flow_stats.other');
+					}
+					$count += $val['access_count'];
+				}
+	
+				foreach ($data as $key => $val) {
+					if (!isset($arr1[$val['referer_domain']])) {
+						$arr1[$val['referer_domain']] = '';
+						$arr1[$val['referer_domain']] = $val;
+					} else {
+						$arr1[$val['referer_domain']]['access_count'] = '';
+						$arr1[$val['referer_domain']]['access_count'] += $val['access_count'];
+					}
+				}
+			}
+	
+			foreach ($arr1 as $k => $v) {
+				$arr1[$k]['percent'] = (round($v['access_count'] / $count,4))*100 .'%';
+			}
+			return array('item' => $arr1);
+		}
+	}
+	
 	/*数组排序*/
-	public function array_sort($array, $on, $order=SORT_ASC) {
+	private function array_sort($array, $on, $order=SORT_ASC) {
 		$new_array = array();
 		$sortable_array = array();
 	
@@ -810,163 +900,6 @@ class admin_flow_stats extends ecjia_admin {
 			}
 		}
 		return $new_array;
-	}
-	
-	/**
-	 * 获取地区分布数据
-	 * */
-	private function get_area_data() {
-		$type = !empty($_GET['type']) ? $_GET['type'] : '';
-		
-		if ($type == 1) {
-			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y'));
-			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
-		} elseif ($type == 2) {
-			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-1, date('Y'));
-			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y'))-1;
-		} elseif ($type == 3) {
-			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-7, date('Y'));
-			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
-		} elseif ($type == 4) {
-			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-30, date('Y'));
-			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
-		} else {
-			$start_date = !empty($_GET['start_date']) ? RC_Time::local_strtotime($_GET['start_date']) : RC_Time::local_strtotime('-3 days');
-			$end_date 	= !empty($_GET['end_date'])   ? RC_Time::local_strtotime($_GET['end_date'])   : RC_Time::local_strtotime('today');
-		}
-		$where = "access_time >= '$start_date' AND access_time <= '$end_date'  AND area != '' ";
-	
-		$area_data = $this->db_stats->field('area,COUNT(*) AS access_count')->where($where)->group('area')->order(array('access_count' => 'DESC'))->select();
-		$count = count($area_data);
-		$page = new ecjia_page($count, 20, 5);
-	
-		$area_datas = $this->db_stats->field('area, COUNT(*) AS access_count')->where($where)->group('area')->order(array('access_count' => 'DESC'))->limit($page->limit())->select();
-	
-		$row = array('item' => $area_datas, 'page' => $page->show(5), 'desc' => $page->page_desc(),'current_page' => $page->current_page);
-		$options = array();
-		return $row;
-	}
-	
-	/**
-	 * 按年份获取来源网站数据
-	 */
-	private function get_from_data() {
-		$type = !empty($_GET['type']) ? $_GET['type'] : '';
-		$from_type = !empty($_GET['from_type']) ? $_GET['from_type'] : 1;
-	
-		if ($type == 1) {
-			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y'));
-			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
-		} elseif ($type == 2) {
-			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-1, date('Y'));
-			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y'))-1;
-		} elseif ($type == 3) {
-			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-7, date('Y'));
-			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
-		} elseif ($type == 4) {
-			$start_date = RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-30, date('Y'));
-			$end_date 	= RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y'))-1;
-		} elseif (empty($type)) {
-			$start_date = !empty($_GET['start_date']) ? RC_Time::local_strtotime($_GET['start_date']) : RC_Time::local_strtotime('-3 days');
-			$end_date 	= !empty($_GET['end_date'])   ? RC_Time::local_strtotime($_GET['end_date'])   : RC_Time::local_strtotime('today');
-		}
-	
-		$where = "access_time >= '$start_date' AND access_time <= '$end_date'";
-		//全部来源
-		if ($from_type == 1) {
-			$from_datas = $this->db_stats->field('referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count')->where($where)->group('referer_domain')->order(array('access_count' => 'DESC'))->select();
-				
-			$count = '';
-			if (!empty($from_datas)) {
-				foreach ($from_datas as $key => $val) {
-					if (empty($val['referer_domain']) || strpos($val['referer_domain'], 'localhost') || strpos($val['referer_domain'], '127.0.0.1')) {
-						$from_datas[$key]['referer_domain'] = '直接访问';
-					} elseif (strpos($val['referer_domain'], 'baidu') || strpos($val['referer_domain'], 'google') || strpos($val['referer_domain'], 'haosou') || strpos($val['referer_domain'], 'sogou') || strpos($val['referer_domain'], 'bing')) {
-						$from_datas[$key]['referer_domain'] = '搜索引擎';
-					} else {
-						$from_datas[$key]['referer_domain'] = '外部链接';
-					}
-					$count += $val['access_count'];
-				}	
-			}
-				
-			$arr = array();
-			$arr1 = array();
-			if (!empty($from_datas)) {
-				foreach ($from_datas as $key =>$val) {
-					if (!isset($arr1[$val['referer_domain']])) {
-						$arr1[$val['referer_domain']] = $val;
-					} else {
-						$arr1[$val['referer_domain']]['access_count'] = '';
-						$arr1[$val['referer_domain']]['visit_count'] = '';
-						$arr1[$val['referer_domain']]['access_count'] += $val['access_count'];
-						$arr1[$val['referer_domain']]['visit_count'] += $val['visit_count'];
-					}
-					$arr1[$val['referer_domain']]['percent'] = (round($arr1[$val['referer_domain']]['access_count'] / $count, 4))*100 .'%';
-				}
-				$arr = $this->array_sort($arr1, 'access_count', SORT_DESC);
-			}
-			return array('item' => $arr);
-		} elseif ($from_type == 2) {
-			$where .= " AND referer_domain != '' AND referer_domain not like '%baidu%' AND referer_domain not like '%google%' AND referer_domain not like '%haosou%' AND referer_domain not like '%sogou%' AND referer_domain not like '%bing%' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%'";
-			$from_datas = $this->db_stats->field('referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count')->where($where)->group('referer_domain')->order(array('access_count' => 'DESC'))->select();
-				
-			$count = '';
-			if (!empty($from_datas)) {
-				foreach ($from_datas as $k => $v) {
-					$counts += $v['access_count'];
-				}
-				$count = count($from_datas);
-			}
-			
-			$page = new ecjia_page($count, 20, 5);
-			$arr1 = $this->db_stats->field('referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count')->where($where)->group('referer_domain')->order(array('access_count' => 'DESC'))->limit($page->limit())->select();
-				
-			if (!empty($arr1)) {
-				foreach ($arr1 as $k => $v) {
-					$arr1[$k]['percent'] = (round($v['access_count'] / $counts, 4))*100 .'%';
-				}
-			}
-			
-			return array('item' => $arr1, 'page' => $page->show(5), 'desc' => $page->page_desc(), 'current_page' => $page->current_page);
-				
-		} elseif ($from_type == 3) {
-			$where .= " AND referer_domain != '' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%' AND (referer_domain like '%www.baidu.com%' or referer_domain like '%www.google.com%' or referer_domain like '%www.haosou.com%' or referer_domain like '%www.sogou.com%' or referer_domain like '%www.bing%') ";
-			$data = $this->db_stats->field('referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count')->where($where)->group('referer_domain')->order(array('access_count' => 'DESC'))->limit(15)->select();
-			
-			$arr1 = array();
-			if (!empty($data)) {
-				foreach ($data as $key => $val) {
-					if (strpos($val['referer_domain'], 'baidu')) {
-						$data[$key]['referer_domain'] = '百度';
-					} elseif (strpos($val['referer_domain'], 'google')) {
-						$data[$key]['referer_domain'] = '谷歌';
-					} elseif (strpos($val['referer_domain'], 'haosou')) {
-						$data[$key]['referer_domain'] = '好搜';
-					} elseif (strpos($val['referer_domain'], 'sogou')) {
-						$data[$key]['referer_domain'] = '搜狗';
-					} elseif (strpos($val['referer_domain'], 'bing') || strpos($val['referer_domain'], '有道')) {
-						$data[$key]['referer_domain'] = '其他';
-					}
-					$count += $val['access_count'];
-				}
-					
-				foreach ($data as $key =>$val) {
-					if (!isset($arr1[$val['referer_domain']])) {
-						$arr1[$val['referer_domain']] = '';
-						$arr1[$val['referer_domain']] = $val;
-					} else {
-						$arr1[$val['referer_domain']]['access_count'] = '';
-						$arr1[$val['referer_domain']]['access_count'] += $val['access_count'];
-					}
-				}
-			}
-			
-			foreach ($arr1 as $k=>$v) {
-				$arr1[$k]['percent'] = (round($v['access_count'] / $count, 4))*100 .'%';
-			}
-			return array('item' => $arr1);
-		}
 	}
 }
 

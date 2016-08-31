@@ -1,15 +1,17 @@
 <?php
 /**
  * 关键字统计
+ * @author wutifang
+ * 
 */
 defined('IN_ECJIA') or exit('No permission resources.');
 
 class admin_keywords_stats extends ecjia_admin {
 	private $db_keywords;
+	
 	public function __construct() {
 		parent::__construct();
 		RC_Loader::load_app_func('global', 'stats');
-		RC_Lang::load('statistic');
 		
 		$this->db_keywords = RC_Loader::load_app_model('keywords_model');
 		/*加载所有全局 js/css */
@@ -31,26 +33,25 @@ class admin_keywords_stats extends ecjia_admin {
 		/*自定义JS*/
 		RC_Style::enqueue_style('stats-css', RC_App::apps_url('statics/css/stats.css', __FILE__), array());
 		RC_Script::enqueue_script('keywords', RC_App::apps_url('statics/js/keywords.js', __FILE__));
+		RC_Script::localize_script('keywords', 'js_lang', RC_Lang::get('stats::statistic.js_lang'));
 	}
 	
 	public function init() {
 		$this->admin_priv('keywords_stats', ecjia::MSGTYPE_JSON);
 		
-		ecjia_screen::get_current_screen()->add_nav_here(new admin_nav_here(__('搜索关键字')));
+		ecjia_screen::get_current_screen()->add_nav_here(new admin_nav_here(RC_Lang::get('stats::statistic.search_keywords')));
 		ecjia_screen::get_current_screen()->add_help_tab(array(
 			'id'		=> 'overview',
-			'title'		=> __('概述'),
-			'content'	=>
-			'<p>' . __('欢迎访问ECJia智能后台搜索引擎页面，系统上所有的搜索引擎信息都会显示在此页面上。') . '</p>'
+			'title'		=> RC_Lang::get('stats::statistic.overview'),
+			'content'	=> '<p>' . RC_Lang::get('stats::statistic.keywords_stats_help') . '</p>'
 		));
-		
 		ecjia_screen::get_current_screen()->set_help_sidebar(
-			'<p><strong>' . __('更多信息:') . '</strong></p>' .
-			'<p>' . __('<a href="https://ecjia.com/wiki/帮助:ECJia智能后台:搜索引擎" target="_blank">关于搜索关键字帮助文档</a>') . '</p>'
+			'<p><strong>' . RC_Lang::get('stats::statistic.more_info') . '</strong></p>' .
+			'<p>' . __('<a href="https://ecjia.com/wiki/帮助:ECJia智能后台:搜索引擎" target="_blank">'. RC_Lang::get('stats::statistic.about_keywords_help') .'</a>') . '</p>'
 		);
 		
-		$this->assign('ur_here', '搜索关键字');
-		$this->assign('action_link', array('text' => '下载搜索关键字报表', 'href' => RC_Uri::url('stats/admin_keywords_stats/download')));
+		$this->assign('ur_here', RC_Lang::get('stats::statistic.search_keywords'));
+		$this->assign('action_link', array('text' => RC_Lang::get('stats::statistic.down_search_stats'), 'href' => RC_Uri::url('stats/admin_keywords_stats/download')));
 		
 		$start_date = !empty($_GET['start_date']) ? $_GET['start_date'] : RC_Time::local_date(ecjia::config('date_format'), strtotime('-7 days')-8*3600);
 		$end_date   = !empty($_GET['end_date']) ? $_GET['end_date'] : RC_Time::local_date(ecjia::config('date_format'));
@@ -67,7 +68,7 @@ class admin_keywords_stats extends ecjia_admin {
 			'SOSO'  		=> false
 		);
 		if (!empty($_GET['filter'])) {
-			$filter  = explode('.', rtrim($_GET['filter'], '.'));
+			$filter  = explode('.', rtrim($_GET['filter'],'.'));
 			foreach ($filter AS $v) {
 				$keywords[$v] = true;
 			}
@@ -75,10 +76,10 @@ class admin_keywords_stats extends ecjia_admin {
 		}
 		$this->assign('keywords', $keywords);
 		$this->assign('search_action', RC_Uri::url('stats/admin_keywords_stats/init'));
-		$keywords_data = $this->get_chartdata();
+		
+		$keywords_data = $this->get_keywords_list();
 		$this->assign('keywords_data', $keywords_data);
 		
-		$this->assign_lang();
 		$this->display('keywords_stats.dwt');
 	}
 
@@ -86,14 +87,14 @@ class admin_keywords_stats extends ecjia_admin {
 	public function download() {
 		$this->admin_priv('keywords_stats', ecjia::MSGTYPE_JSON);
 
-		$start_date = empty($_GET['start_date']) ? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('-7 days')) : $_GET['start_date'];
-		$end_date = empty($_GET['end_date']) ? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('today')) : $_GET['end_date'];
+		$start_date = empty($_GET['start_date']) ? RC_Time::local_date(ecjia::config('date_format'),RC_Time::local_strtotime('-7 days')) : $_GET['start_date'];
+		$end_date = empty($_GET['end_date']) ? RC_Time::local_date(ecjia::config('date_format'),RC_Time::local_strtotime('today')) : $_GET['end_date'];
 		$where = "date >= '$start_date' AND date <= '$end_date' ";
 		
-		$filename = mb_convert_encoding(RC_Lang::lang('tab_keywords'), "GBK", "UTF-8");
+		$filename = mb_convert_encoding(RC_Lang::get('stats::statistic.tab_keywords'), "GBK", "UTF-8");
 		
 		if (!empty($_GET['filter'])) {
-			$filter  = explode('.',rtrim($_GET['filter'],'.'));
+			$filter  = explode('.', rtrim($_GET['filter'],'.'));
 			foreach ($filter AS $v) {
 				if ($v == 'ECJIA') {
 					$keywords[] = 'ecshop';
@@ -103,11 +104,12 @@ class admin_keywords_stats extends ecjia_admin {
 			$where .= ' AND '.db_create_in($keywords, 'searchengine');
 		}
 		
-		$keywords_list =  $this->db_keywords->field('date, searchengine, keyword, count')->where($where)->order(array('count' => 'DESC'))->select();
+		$keywords_list = $this->db_keywords->keywords_select($where, 'keyword, count, searchengine, date', array('count' => 'DESC'));
+		
 		header("Content-type: application/vnd.ms-excel; charset=utf-8");
 		header("Content-Disposition: attachment; filename=$filename.xls");
 		
-		$data = RC_Lang::lang('keywords')."\t".RC_Lang::lang('searchengine')."\t".RC_Lang::lang('hits').RC_Lang::lang('date')."\t\n";
+		$data = RC_Lang::get('stats::statistic.keywords')."\t".RC_Lang::get('stats::statistic.searchengine')."\t".RC_Lang::get('stats::statistic.hits')."\t".RC_Lang::get('stats::statistic.date')."\t\n";
 		
 		if (!empty($keywords_list)) {
 			foreach ($keywords_list as $v) {
@@ -120,14 +122,16 @@ class admin_keywords_stats extends ecjia_admin {
 		echo mb_convert_encoding($data."\t", "GBK", "UTF-8");
 		exit;
 	}
-
+	
 	/**
 	 * 获取数据
 	 */
-	private function get_chartdata() {
-		$start_date = empty($_GET['start_date']) ? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('-7 days')) : $_GET['start_date'];
-		$end_date = empty($_GET['end_date']) ? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('today')) : $_GET['end_date'];
-		$where = "date >= '$start_date' AND date <= '$end_date' ";
+	private function get_keywords_list() {
+		$db_keywords = RC_Loader::load_app_model('keywords_model');
+		
+		$start_date = empty($_GET['start_date']) 	? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('-7 days')) : $_GET['start_date'];
+		$end_date 	= empty($_GET['end_date']) 		? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('today')) 	: $_GET['end_date'];
+		$where 		= "date >= '$start_date' AND date <= '$end_date' ";
 	
 		if (!empty($_GET['filter'])) {
 			$filter  = explode('.', rtrim($_GET['filter'],'.'));
@@ -137,11 +141,11 @@ class admin_keywords_stats extends ecjia_admin {
 				}
 				$keywords[] = $v;
 			}
-			$where .= ' AND '.db_create_in($keywords, 'searchengine');	
+			$where .= ' AND '.db_create_in($keywords, 'searchengine');
 		}
-		$count = $this->db_keywords->where($where)->count();
+		$count = $db_keywords->keywords_count($where);
 		$page = new ecjia_page($count, 20, 5);
-		$data = $this->db_keywords->field('keyword, count, searchengine, date')->where($where)->limit($page->limit())->order(array('count' => 'DESC'))->select();
+		$data = $db_keywords->keywords_select($where, 'keyword, count, searchengine, date', array('count' => 'DESC'), $page->limit());
 	
 		return array('item' => $data, 'page' => $page->show(5), 'desc' => $page->page_desc());
 	}

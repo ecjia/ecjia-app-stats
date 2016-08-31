@@ -10,8 +10,9 @@ class stats_model extends Component_Model_Model {
 		parent::__construct();
 	}
 
-
-
+	public function stats_select($where, $field='*', $group=null, $order=null, $limit=null) {
+		return $this->where($where)->field($field)->group($group)->order($order)->limit($limit)->select();
+	}
 }
 
 // end
