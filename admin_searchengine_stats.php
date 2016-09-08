@@ -10,7 +10,7 @@ class admin_searchengine_stats extends ecjia_admin {
 	private $db_searchengine;
 	public function __construct() {
 		parent::__construct();
-        $this->db_searchengine = RC_Loader::load_app_model('searchengine_model', 'stats');
+        $this->db_searchengine = RC_Model::model('stats/searchengine_model');
         
         RC_Loader::load_app_func('global', 'stats');
         

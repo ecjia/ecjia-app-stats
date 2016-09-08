@@ -11,7 +11,8 @@ class admin_flow_stats extends ecjia_admin {
 	public function __construct() {
 		parent::__construct();
 		
-        $this->db_stats = RC_Loader::load_app_model('stats_model', 'stats');
+        $this->db_stats = RC_Model::model('stats/stats_model');
+        
         RC_Loader::load_app_func('global', 'stats');
         
         /* 加载所有全局 js/css */
@@ -716,7 +717,7 @@ class admin_flow_stats extends ecjia_admin {
 	 * 获取地区分布数据
 	 * */
 	private function get_area_data() {
-		$db_stats = RC_Loader::load_app_model('stats_model', 'stats');
+		$db_stats = RC_Model::model('stats/stats_model');
 		
 		$type = !empty($_GET['type']) ? $_GET['type'] : '';
 	
@@ -750,7 +751,7 @@ class admin_flow_stats extends ecjia_admin {
 	 * 按年份获取来源网站数据
 	 */
 	private function get_from_data() {
-		$db_stats = RC_Loader::load_app_model('stats_model', 'stats');
+		$db_stats = RC_Model::model('stats/stats_model');
 		
 		$type = !empty($_GET['type']) ? $_GET['type'] : '';
 		$from_type = !empty($_GET['from_type']) ? $_GET['from_type'] : 1;

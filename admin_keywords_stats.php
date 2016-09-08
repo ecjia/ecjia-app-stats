@@ -13,7 +13,7 @@ class admin_keywords_stats extends ecjia_admin {
 		parent::__construct();
 		RC_Loader::load_app_func('global', 'stats');
 		
-		$this->db_keywords = RC_Loader::load_app_model('keywords_model');
+		$this->db_keywords = RC_Model::model('stats/keywords_model');
 		/*加载所有全局 js/css */
 		RC_Script::enqueue_script('bootstrap-placeholder');
 		RC_Script::enqueue_script('jquery-validate');
@@ -127,7 +127,7 @@ class admin_keywords_stats extends ecjia_admin {
 	 * 获取数据
 	 */
 	private function get_keywords_list() {
-		$db_keywords = RC_Loader::load_app_model('keywords_model');
+		$db_keywords = RC_Model::model('stats/keywords_model');
 		
 		$start_date = empty($_GET['start_date']) 	? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('-7 days')) : $_GET['start_date'];
 		$end_date 	= empty($_GET['end_date']) 		? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('today')) 	: $_GET['end_date'];

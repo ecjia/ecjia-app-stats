@@ -8,7 +8,7 @@ defined('IN_ECJIA') or exit('No permission resources.');
 class stats_spider_record_api extends Component_Event_Api {
 	
 	public function call(&$options) {
-        $db = RC_Loader::load_app_model('searchengine_model', 'stats');
+        $db = RC_Model::model('stats/searchengine_model');
 	    
         $spider = $options['searchengine'];
         
