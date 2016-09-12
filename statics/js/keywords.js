@@ -14,12 +14,18 @@
                 e.preventDefault();
                 var start_date = $("input[name='start_date']").val(); //开始时间
                 var end_date = $("input[name='end_date']").val(); //结束时间
-                var filter = "";
-                $("input[name=filter]").each(function () {
-                    if ($(this).attr("checked")) {
-                        filter += $(this).val() + '.';
-                    }
-                });
+                var filter = '';
+                
+                var check_length = $("input[name='filter'][checked]").length;
+            	if (check_length == 1) {
+            		filter = $("input[name='filter'][checked]").val();
+            	} else {
+            		$("input[name=filter]").each(function () {
+	                    if ($(this).attr("checked")) {
+	                        filter += $(this).val() + '.';
+	                    }
+                    });
+            	}
                 
                 var url = $("form[name='theForm']").attr('action'); //请求链接
                 if (start_date == 'undefind') start_date = '';

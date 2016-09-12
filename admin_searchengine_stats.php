@@ -7,11 +7,8 @@
 defined('IN_ECJIA') or exit('No permission resources.');
 
 class admin_searchengine_stats extends ecjia_admin {
-	private $db_searchengine;
 	public function __construct() {
 		parent::__construct();
-        $this->db_searchengine = RC_Model::model('stats/searchengine_model');
-        
         RC_Loader::load_app_func('global', 'stats');
         
         /* 加载所有全局 js/css */
@@ -51,7 +48,7 @@ class admin_searchengine_stats extends ecjia_admin {
 		$this->assign('form_action', RC_Uri::url('stats/admin_searchengine_stats/init'));
 		$this->assign('ajax_loader', RC_App::apps_url('statics/images/ajax_loader.gif', __FILE__));
 		
-		$type = !empty($_GET['type']) ? intval($_GET['type']) : 2; 	//1昨天 2今天 3本周 4本月
+		$type = !empty($_GET['type']) ? intval($_GET['type']) : 1; 	//1今天 2昨天 3本周 4本月
 		$month = !empty($_GET['month']) ? intval($_GET['month']) : intval(date('m'));
 		$month_list = RC_Lang::get('stats::statistic.month_list');
 		
@@ -70,39 +67,21 @@ class admin_searchengine_stats extends ecjia_admin {
 	public function get_chart_data() {
 		$this->admin_priv('searchengine_stats', ecjia::MSGTYPE_JSON);
 		
-		$type = !empty($_GET['type']) ? intval($_GET['type']) : 2;	
+		$db_searchengine = RC_DB::table('searchengine');
+		$type = !empty($_GET['type']) ? intval($_GET['type']) : 1;	
 		
 		if ($type == 1) {
 			$format = '%Y-%m-%d';
-			$start_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-2, date('Y')));
-			$end_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y')));
-			
-			$where = "date > '$start_date' AND date < '$end_date' ";
-			$field = "DATE_FORMAT((date), '". $format ."') AS time, searchengine, count";
-			$count = $this->db_searchengine->searchengine_select($where, $field, 'date asc');
-			
-			$counts = array();
-			if (!empty($count)) {
-				foreach ($count as $k => $v) {
-					foreach ($v as $key => $val) {
-						if ($key == 'searchengine') {
-							$counts[$v['searchengine']] = $v['count'];
-						}
-					}
-				}
-			}
-			$counts = json_encode($counts);
-			echo $counts;
-			
-		} elseif ($type == 2) {
-			$format = '%Y-%m-%d';
 			$start_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0,0,0,date('m'),date('d')-1,date('Y')));
 			$end_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0,0,0,date('m'),date('d')+1,date('Y')));
-			
-			$where = "date > '$start_date' AND date < '$end_date' ";
-			$field = "DATE_FORMAT((date), '". $format ."') AS time, searchengine, count";
-			$count = $this->db_searchengine->searchengine_select($where, $field, 'date asc');
-			
+				
+// 			$where = "date > '$start_date' AND date < '$end_date' ";
+// 			$field = "DATE_FORMAT((date), '". $format ."') AS time, searchengine, count";
+// 			$count = $this->db_searchengine->searchengine_select($where, $field, 'date asc');
+						
+			$db_searchengine->where('date', '>', $start_date)->where('date', '<', $end_date);
+			$count = $db_searchengine->select(RC_DB::raw("DATE_FORMAT((date), '". $format ."') AS time, searchengine, count"))->orderby('date', 'asc')->get();
+				
 			$counts = array();
 			if (!empty($count)) {
 				foreach ($count as $k => $v) {
@@ -113,18 +92,44 @@ class admin_searchengine_stats extends ecjia_admin {
 					}
 				}
 			}
-			
+				
 			$counts = json_encode($counts);
 			echo $counts;
+		} elseif ($type == 2) {
+			$format = '%Y-%m-%d';
+			$start_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-2, date('Y')));
+			$end_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y')));
+				
+// 			$where = "date > '$start_date' AND date < '$end_date' ";
+// 			$field = "DATE_FORMAT((date), '". $format ."') AS time, searchengine, count";
+// 			$count = $this->db_searchengine->searchengine_select($where, $field, 'date asc');
 			
+			$db_searchengine->where('date', '>', $start_date)->where('date', '<', $end_date);
+			$count = $db_searchengine->select(RC_DB::raw("DATE_FORMAT((date), '". $format ."') AS time, searchengine, count"))->orderby('date', 'asc')->get();
+				
+			$counts = array();
+			if (!empty($count)) {
+				foreach ($count as $k => $v) {
+					foreach ($v as $key => $val) {
+						if ($key == 'searchengine') {
+							$counts[$v['searchengine']] = $v['count'];
+						}
+					}
+				}
+			}
+			$counts = json_encode($counts);
+			echo $counts;
 		} elseif ($type == 3) {
 			$format = '%Y-%m-%d';
 			$start_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-date('w')+1, date('Y')));
 			$end_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(23, 59, 59, date('m'), date('d')-date('w')+7, date('Y')));
 			
-			$where = "date >= '$start_date' AND date <= '$end_date' ";
-			$field = "DATE_FORMAT((date), '". $format ."') AS time, searchengine, count";
-			$count = $this->db_searchengine->searchengine_select($where, $field, 'date asc');
+// 			$where = "date >= '$start_date' AND date <= '$end_date' ";
+// 			$field = "DATE_FORMAT((date), '". $format ."') AS time, searchengine, count";
+// 			$count = $this->db_searchengine->searchengine_select($where, $field, 'date asc');
+			
+			$db_searchengine->where('date', '>=', $start_date)->where('date', '<=', $end_date);
+			$count = $db_searchengine->select(RC_DB::raw("DATE_FORMAT((date), '". $format ."') AS time, searchengine, count"))->orderby('date', 'asc')->get();
 			
 			$arr = array();
 			$arr1 = array();
@@ -167,9 +172,12 @@ class admin_searchengine_stats extends ecjia_admin {
 			$start_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date($month), 1, date('Y')));
 			$end_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date($month+1), 1, date('Y'))-86400);
 			
-			$where = "date >= '$start_date' AND date <= '$end_date' ";
-			$field = "DATE_FORMAT((date), '". $format ."') AS time, searchengine, count";
-			$count = $this->db_searchengine->searchengine_select($where, $field, 'date asc');
+// 			$where = "date >= '$start_date' AND date <= '$end_date' ";
+// 			$field = "DATE_FORMAT((date), '". $format ."') AS time, searchengine, count";
+// 			$count = $this->db_searchengine->searchengine_select($where, $field, 'date asc');
+			
+			$db_searchengine->where('date', '>=', $start_date)->where('date', '<=', $end_date);
+			$count = $db_searchengine->select(RC_DB::raw("DATE_FORMAT((date), '". $format ."') AS time, searchengine, count"))->orderby('date', 'asc')->get();
 			
 			$arr = array();
 			$arr1 = array();
@@ -218,27 +226,35 @@ class admin_searchengine_stats extends ecjia_admin {
 		header("Content-type: application/vnd.ms-excel; charset=utf-8");
 		header("Content-Disposition: attachment; filename=$filename.xls");
 		
-		$type = !empty($_GET['type']) ? intval($_GET['type']) : '2';
+		$db_searchengine = RC_DB::table('searchengine');
+		$type = !empty($_GET['type']) ? intval($_GET['type']) : 1;
 		$month = !empty($_GET['month']) ? intval($_GET['month']) : intval(date('m'));
 		
 		if ($type == 1) {
-			$start_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-2, date('Y')));
-			$end_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y')));
-				
-			$where = "date > '$start_date' AND date < '$end_date' ";
-		} elseif ($type == 2) {
 			$start_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-1, date('Y')));
 			$end_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date('m'), date('d')+1, date('Y')));
-				
-			$where = "date > '$start_date' AND date < '$end_date' ";
+			
+// 			$where = "date > '$start_date' AND date < '$end_date' ";
+			
+			$db_searchengine->where('date', '>', $start_date)->where('date', '<', $end_date);
+		} elseif ($type == 2) {
+			$start_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-2, date('Y')));
+			$end_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date('m'), date('d'), date('Y')));
+			
+// 			$where = "date > '$start_date' AND date < '$end_date' ";
+			
+			$db_searchengine->where('date', '>', $start_date)->where('date', '<', $end_date);
 		} elseif ($type == 3) {
 			$format = '%Y-%m-%d';
 			$start_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date('m'), date('d')-date('w')+1, date('Y')));
 			$end_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(23, 59, 59, date('m'), date('d')-date('w')+7, date('Y')));
 			
-			$where = "date >= '$start_date' AND date <= '$end_date' ";
-			$field = "DATE_FORMAT((date), '". $format ."') AS time, searchengine, count";
-			$count = $this->db_searchengine->searchengine_select($where, $field, 'date asc');
+// 			$where = "date >= '$start_date' AND date <= '$end_date' ";
+// 			$field = "DATE_FORMAT((date), '". $format ."') AS time, searchengine, count";
+// 			$count = $this->db_searchengine->searchengine_select($where, $field, 'date asc');
+			
+			$db_searchengine->where('date', '>=', $start_date)->where('date', '<=', $end_date);
+			$count = $db_searchengine->select(RC_DB::raw("DATE_FORMAT((date), '". $format ."') AS time, searchengine, count"))->orderby('date', 'asc')->get();
 			
 			$data = '';
 			$arr = array();
@@ -277,9 +293,12 @@ class admin_searchengine_stats extends ecjia_admin {
 			$start_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date($month), 1, date('Y')));
 			$end_date = RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_mktime(0, 0, 0, date($month+1), 1, date('Y'))-86400);
 			
-			$where = "date >= '$start_date' AND date <= '$end_date' ";
-			$field = "DATE_FORMAT((date), '". $format ."') AS time, searchengine, count";
-			$count = $this->db_searchengine->searchengine_select($where, $field, 'date asc');
+// 			$where = "date >= '$start_date' AND date <= '$end_date' ";
+// 			$field = "DATE_FORMAT((date), '". $format ."') AS time, searchengine, count";
+// 			$count = $this->db_searchengine->searchengine_select($where, $field, 'date asc');
+			
+			$db_searchengine->where('date', '>=', $start_date)->where('date', '<=', $end_date);
+			$count = $db_searchengine->select(RC_DB::raw("DATE_FORMAT((date), '". $format ."') AS time, searchengine, count"))->orderby('date', 'asc')->get();
 			
 			$data = '';
 			$arr = $arr1 = array();
@@ -314,7 +333,8 @@ class admin_searchengine_stats extends ecjia_admin {
 			exit;
 		} 
 		if ($type == 1 || $type == 2) {
-			$list = $this->db_searchengine->searchengine_select($where, 'date, searchengine, count', 'date asc');
+// 			$list = $this->db_searchengine->searchengine_select($where, 'date, searchengine, count', 'date asc');
+			$list = $db_searchengine->select(RC_DB::raw("DATE_FORMAT((date), '". $format ."') AS time, searchengine, count"))->orderby('date', 'asc')->get();
 			
 			$data =	RC_Lang::get('stats::statistic.date')."\t".RC_Lang::get('stats::statistic.searchengine')."\t".RC_Lang::get('stats::statistic.hits')."\t\n";
 			if (!empty($list)) {

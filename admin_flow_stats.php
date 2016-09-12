@@ -198,6 +198,7 @@ class admin_flow_stats extends ecjia_admin {
 	 * 按年份获取综合访问量图表数据
 	 */
 	public function get_general_chart_data() {
+		$db_stats = RC_DB::table('stats');
 		//按年查询
 		$type 		= !empty($_GET['type']) 		? true 					: false;
 		$start_year = !empty($_GET['start_year']) 	? $_GET['start_year'] 	: '';
@@ -213,9 +214,13 @@ class admin_flow_stats extends ecjia_admin {
 				}
 			}
 			foreach ($start_year_arr as $k => $v) {
-				$where = "access_time >= '$start_year_arr[$k]' AND access_time <= '$end_year_arr[$k]+86400' ";
-				$field = 'FLOOR((access_time - '.$start_year_arr[$k].') / (24 * 31 * 3600)) AS sn, access_time, COUNT(*) AS access_count';
-				$general_data[] = $this->db_stats->stats_select($where, $field, 'sn');
+// 				$where = "access_time >= '$start_year_arr[$k]' AND access_time <= '$end_year_arr[$k]+86400' ";
+// 				$field = 'FLOOR((access_time - '.$start_year_arr[$k].') / (24 * 31 * 3600)) AS sn, access_time, COUNT(*) AS access_count';
+// 				$general_data[] = $this->db_stats->stats_select($where, $field, 'sn');
+				
+				$db_stats->where('access_time', '>=', $start_year_arr[$k])->where('access_time', '<=', $end_year_arr[$k]+86400);
+				$db_stats->select(RC_DB::raw('FLOOR((access_time - '.$start_year_arr[$k].') / (24 * 31 * 3600)) AS sn, access_time'), 
+						RC_DB::raw('COUNT(*) AS access_count'))->groupby('sn')->get();
 			}
 			
 			if (!empty($general_data)) {
@@ -253,6 +258,7 @@ class admin_flow_stats extends ecjia_admin {
 	}
 	
 	public function get_general_chart_datas() {
+		$db_stats = RC_DB::table('stats');
 		//按月查询
 		$type 		= !empty($_GET['type']) 		? true 					: false;
 		$start_month= !empty($_GET['start_month'])	? $_GET['start_month'] 	: '';
@@ -269,9 +275,13 @@ class admin_flow_stats extends ecjia_admin {
 				}
 			}
 			foreach ($start_date_arr as $k => $val) {
-				$where = "access_time>= '$start_date_arr[$k]' AND access_time <= '$end_date_arr[$k]+86400'";
-				$field = 'FLOOR((access_time - '.$start_date_arr[$k].') / (24 * 3600)) AS sn, access_time, COUNT(*) AS access_count';
-				$data[] = $this->db_stats->stats_select($where, $field, 'sn');
+// 				$where = "access_time>= '$start_date_arr[$k]' AND access_time <= '$end_date_arr[$k]+86400'";
+// 				$field = 'FLOOR((access_time - '.$start_date_arr[$k].') / (24 * 3600)) AS sn, access_time, COUNT(*) AS access_count';
+// 				$data[] = $this->db_stats->stats_select($where, $field, 'sn');
+				
+				$db_stats->where('access_time', '>=', $start_date_arr[$k])->where('access_time', '<=', $end_date_arr[$k]+86400);
+				$db_stats->select(RC_DB::raw('FLOOR((access_time - '.$start_date_arr[$k].') / (24 * 3600)) AS sn, access_time'),
+						RC_DB::raw('COUNT(*) AS access_count'))->groupby('sn')->get();
 			}
 				
 			if (!empty($data)) {
@@ -311,6 +321,7 @@ class admin_flow_stats extends ecjia_admin {
 	 * 获取地区分布图表数据
 	 */
 	public function get_area_chart_data() {
+		$db_stats = RC_DB::table('stats');
 		$type = !empty($_GET['type']) ? $_GET['type'] : '';
 		
 		if ($type == 1) {
@@ -329,9 +340,12 @@ class admin_flow_stats extends ecjia_admin {
 			$start_date = !empty($_GET['start_date']) ? RC_Time::local_strtotime($_GET['start_date']) : RC_Time::local_strtotime('-3 days');
 			$end_date 	= !empty($_GET['end_date'])   ? RC_Time::local_strtotime($_GET['end_date'])   : RC_Time::local_strtotime('today');
 		}
-		$where = "access_time >= '$start_date' AND access_time <= '$end_date' AND area != '' ";
-		$field = 'area, COUNT(*) AS access_count';
-		$area_data = $this->db_stats->stats_select($where, $field, 'area', array('access_count' => 'DESC'), 15);
+// 		$where = "access_time >= '$start_date' AND access_time <= '$end_date' AND area != '' ";
+// 		$field = 'area, COUNT(*) AS access_count';
+// 		$area_data = $this->db_stats->stats_select($where, $field, 'area', array('access_count' => 'DESC'), 15);
+		
+		$area_data = $db_stats->where('access_time', '>=', $start_date)->where('access_time', '<=', $end_date)->where('area', '!=', '')
+		->select(RC_DB::raw('area, count(*) as access_count'))->groupby('area')->orderby('access_count', 'desc')->take(15)->get();
 		
 		$arr1 = array();
 		if (!empty($area_data)) {
@@ -350,6 +364,7 @@ class admin_flow_stats extends ecjia_admin {
 	 * 获取来源网站图表数据
 	 */
 	public function get_from_chart_data() {
+		$db_stats = RC_DB::table('stats');
 		$type = !empty($_GET['type']) ? $_GET['type'] : '';
 		$from_type = !empty($_GET['from_type']) ? $_GET['from_type'] : 1;
 		
@@ -370,11 +385,14 @@ class admin_flow_stats extends ecjia_admin {
 			$end_date 	= !empty($_GET['end_date'])   ? RC_Time::local_strtotime($_GET['end_date'])   : RC_Time::local_strtotime('today');
 		}
 		
-		$where = "access_time >= '$start_date' AND access_time <= '$end_date'";
+// 		$where = "access_time >= '$start_date' AND access_time <= '$end_date'";
+		$db_stats->where('access_time', '>=', $start_date)->where('access_time', '<=', $end_date);
 		//全部来源
 		if ($from_type == 1) {
-			$field = 'referer_domain, COUNT(*) AS access_count';
-			$data = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'));
+// 			$field = 'referer_domain, COUNT(*) AS access_count';
+// 			$data = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'));
+			
+			$data = $db_stats->select(RC_DB::raw('referer_domain, COUNT(*) AS access_count'))->groupby('referer_domain')->orderby('access_count', 'desc')->get();
 
 			$arr1 = array();
 			if (!empty($data)) {
@@ -404,10 +422,20 @@ class admin_flow_stats extends ecjia_admin {
 			echo $from_datas;
 		//外部链接
 		} elseif ($from_type == 2) {
-			$where .= " AND referer_domain != '' AND referer_domain not like '%www.baidu.com%' AND referer_domain not like '%www.google.com%' AND referer_domain not like '%www.haosou.com%' AND referer_domain not like '%www.sogou.com%' AND referer_domain not like '%www.bing%' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%'";
-			$field = 'referer_domain, COUNT(*) AS access_count';
+// 			$where .= " AND referer_domain != '' AND referer_domain not like '%www.baidu.com%' AND referer_domain not like '%www.google.com%' AND referer_domain not like '%www.haosou.com%' AND referer_domain not like '%www.sogou.com%' AND referer_domain not like '%www.bing.com%' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%'";
+// 			$field = 'referer_domain, COUNT(*) AS access_count';
+// 			$data = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'), 15);
 			
-			$data = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'), 15);
+			$data = $db_stats->where('referer_domain', '!=', '')
+				->where('referer_domain', 'not like', '%www.baidu.com%')
+				->where('referer_domain', 'not like', '%www.google.com%')
+				->where('referer_domain', 'not like', '%www.haosou.com%')
+				->where('referer_domain', 'not like', '%www.sogou.com%')
+				->where('referer_domain', 'not like', '%www.bing.com%')
+				->where('referer_domain', 'not like', '%localhost%')
+				->where('referer_domain', 'not like', '%127.0.0.1%')
+				->select(RC_DB::raw('referer_domain, COUNT(*) AS access_count'))
+				->groupby('referer_domain')->orderby('access_count', 'desc')->take(15)->get();
 			
 			$arr1 = array();
 			if (!empty($data)) {
@@ -423,10 +451,23 @@ class admin_flow_stats extends ecjia_admin {
 			echo $from_datas;
 		//搜索引擎
 		} elseif ($from_type == 3) {
-			$where .= " AND referer_domain != '' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%' AND (referer_domain like '%www.baidu.com%' or referer_domain like '%www.google.com%' or referer_domain like '%www.haosou.com%' or referer_domain like '%www.sogou.com%' or referer_domain like '%www.bing%') ";
-			$field = 'referer_domain, COUNT(*) AS access_count';
+// 			$where .= " AND referer_domain != '' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%' AND (referer_domain like '%www.baidu.com%' or referer_domain like '%www.google.com%' or referer_domain like '%www.haosou.com%' or referer_domain like '%www.sogou.com%' or referer_domain like '%www.bing.com%') ";
+// 			$field = 'referer_domain, COUNT(*) AS access_count';
+// 			$data = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'), 15);
 			
-			$data = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'), 15);
+			$data = $db_stats->where('referer_domain', '!=', '')
+				->where('referer_domain', 'not like', '%localhost%')
+				->where('referer_domain', 'not like', '%127.0.0.1%')
+				->where(function($query) {
+					$query->where('referer_domain', 'like', '%www.baidu.com%')
+					->where('referer_domain', 'like', '%www.google.com%')
+					->where('referer_domain', 'like', '%www.haosou.com%')
+					->where('referer_domain', 'like', '%www.sogou.com%')
+					->where('referer_domain', 'like', '%www.bing.com%');
+				})
+				->select(RC_DB::raw('referer_domain, COUNT(*) AS access_count'))
+				->groupby('referer_domain')->orderby('access_count', 'desc')->take(15)->get();
+			
 			$arr1 = array();
 			if (!empty($data)) {
 				foreach ($data as $key => $val) {
@@ -473,6 +514,7 @@ class admin_flow_stats extends ecjia_admin {
 		$start_year = !empty($_GET['start_year']) 	? $_GET['start_year'] 	: '';
 		$end_year 	= !empty($_GET['end_year']) 	? $_GET['end_year'] 	: '';
 		$arr 		= array($start_year, $end_year);
+		$db_stats	= RC_DB::table('stats');
 		
 		$start_date_arr = $end_date_arr = $general_data = $arr1 = array();
 		for ($i = 0; $i < count($arr); $i++) {
@@ -482,9 +524,13 @@ class admin_flow_stats extends ecjia_admin {
 			}
 		}
 		foreach ($start_year_arr as $k => $v) {
-			$where = "access_time >= '$start_year_arr[$k]' AND access_time <= '$end_year_arr[$k]+86400' ";
-			$field = 'FLOOR((access_time - '.$start_year_arr[$k].') / (24 * 31 * 3600)) AS sn, access_time, COUNT(*) AS access_count';
-			$general_data[] = $this->db_stats->stats_select($where, $field, 'sn');
+// 			$where = "access_time >= '$start_year_arr[$k]' AND access_time <= '$end_year_arr[$k]+86400' ";
+// 			$field = 'FLOOR((access_time - '.$start_year_arr[$k].') / (24 * 31 * 3600)) AS sn, access_time, COUNT(*) AS access_count';
+// 			$general_data[] = $this->db_stats->stats_select($where, $field, 'sn');
+			
+			$db_stats->where('access_time', '>=', $start_year_arr[$k])->where('access_time', '<=', $end_year_arr[$k]+86400);
+			$db_stats->select(RC_DB::raw('FLOOR((access_time - '.$start_year_arr[$k].') / (24 * 31 * 3600)) AS sn, access_time'),
+					RC_DB::raw('COUNT(*) AS access_count'))->groupby('sn')->get();
 		}
 		
 		$data  = RC_Lang::get('stats::flow_stats.tab_general') . "\t\n";
@@ -509,6 +555,7 @@ class admin_flow_stats extends ecjia_admin {
 	public function area_stats_download() {
 		$this->admin_priv('flow_stats', ecjia::MSGTYPE_JSON);
 		$type = !empty($_GET['type']) ? $_GET['type'] : '';
+		$db_stats = RC_DB::table('stats');
 		
 		$filename = mb_convert_encoding(RC_Lang::get('stats::flow_stats.area_stats'), "GBK", "UTF-8");
 		header("Content-type: application/vnd.ms-excel; charset=utf-8");
@@ -532,9 +579,12 @@ class admin_flow_stats extends ecjia_admin {
 			$end_date 	= RC_Time::local_strtotime($_GET['end_date']);
 		}
 		
-		$where = "access_time >= '$start_date' AND access_time <= '$end_date' AND area != '' ";
-		$field = 'area, COUNT(*) AS access_count';
-		$area_data = $this->db_stats->stats_select($where, $field, 'area', array('access_count' => 'DESC'), 15);
+// 		$where = "access_time >= '$start_date' AND access_time <= '$end_date' AND area != '' ";
+// 		$field = 'area, COUNT(*) AS access_count';
+// 		$area_data = $this->db_stats->stats_select($where, $field, 'area', array('access_count' => 'DESC'), 15);
+		
+		$area_data = $db_stats->where('access_time', '>=', $start_date)->where('access_time', '<=', $end_date)->where('area', '!=', '')
+		->select(RC_DB::raw('area, count(*) as access_count'))->groupby('area')->orderby('access_count', 'desc')->take(15)->get();
 		
 		$arr1 = array();
 		if (!empty($area_data)) {
@@ -573,6 +623,7 @@ class admin_flow_stats extends ecjia_admin {
 		
 		$type = !empty($_GET['type']) ? $_GET['type'] : '';
 		$from_type = !empty($_GET['from_type']) ? $_GET['from_type'] : 1;
+		$db_stats = RC_DB::table('stats');
 		
 		/*时间参数 */
 		if ($type == 1) {
@@ -592,12 +643,16 @@ class admin_flow_stats extends ecjia_admin {
 			$end_date 	= !empty($_GET['end_date'])   ? RC_Time::local_strtotime($_GET['end_date'])   : RC_Time::local_strtotime('today');
 		}
 		
-		$where = "access_time >= '$start_date' AND access_time <= '$end_date'";
+// 		$where = "access_time >= '$start_date' AND access_time <= '$end_date'";
+		$db_stats->where('access_time', '>=', $start_date)->where('access_time', '<=', $end_date);
+		
 		$data = '';
 		//全部来源
 		if ($from_type == 1) {
-			$field = 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count';
-			$arr = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'));
+// 			$field = 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count';
+// 			$arr = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'));
+			
+			$arr = $db_stats->select(RC_DB::raw('referer_domain, COUNT(*) AS access_count'), RC_DB::raw('SUM(visit_times) AS visit_count'))->groupby('referer_domain')->orderby('access_count', 'desc')->get();
 			
 			$count = '';
 			if (!empty($arr)) {
@@ -635,10 +690,21 @@ class admin_flow_stats extends ecjia_admin {
 
 		//外部链接
 		} elseif ($from_type == 2) {
-			$where .= " AND referer_domain != '' AND referer_domain not like '%baidu%' AND referer_domain not like '%google%' AND referer_domain not like '%haosou%' AND referer_domain not like '%sogou%' AND referer_domain not like '%bing%' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%'";
-			$field = 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count';
+// 			$where .= " AND referer_domain != '' AND referer_domain not like '%baidu%' AND referer_domain not like '%google%' AND referer_domain not like '%haosou%' AND referer_domain not like '%sogou%' AND referer_domain not like '%bing%' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%'";
+// 			$field = 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count';
+// 			$arr1 = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'));
 			
-			$arr1 = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'));
+			$arr1 = $db_stats->where('referer_domain', '!=', '')
+				->where('referer_domain', 'not like', '%www.baidu.com%')
+				->where('referer_domain', 'not like', '%www.google.com%')
+				->where('referer_domain', 'not like', '%www.haosou.com%')
+				->where('referer_domain', 'not like', '%www.sogou.com%')
+				->where('referer_domain', 'not like', '%www.bing.com%')
+				->where('referer_domain', 'not like', '%localhost%')
+				->where('referer_domain', 'not like', '%127.0.0.1%')
+				->select(RC_DB::raw('referer_domain, COUNT(*) AS access_count'), RC_DB::raw('SUM(visit_times) AS visit_count'))
+				->groupby('referer_domain')->orderby('access_count', 'desc')->get();
+			
 			$counts = '';
 			if (!empty($arr1)) {
 				foreach ($arr1 as $k => $v) {
@@ -657,10 +723,23 @@ class admin_flow_stats extends ecjia_admin {
 
 		//搜索引擎
 		} elseif ($from_type == 3) {
-			$where .= " AND referer_domain != '' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%' AND (referer_domain like '%www.baidu.com%' or referer_domain like '%www.google.com%' or referer_domain like '%www.haosou.com%' or referer_domain like '%www.sogou.com%' or referer_domain like '%www.bing%') ";
-			$field = 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count';
+// 			$where .= " AND referer_domain != '' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%' AND (referer_domain like '%www.baidu.com%' or referer_domain like '%www.google.com%' or referer_domain like '%www.haosou.com%' or referer_domain like '%www.sogou.com%' or referer_domain like '%www.bing%') ";
+// 			$field = 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count';
+// 			$data = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'));
 			
-			$data = $this->db_stats->stats_select($where, $field, 'referer_domain', array('access_count' => 'DESC'));
+			$data = $db_stats->where('referer_domain', '!=', '')
+				->where('referer_domain', 'not like', '%localhost%')
+				->where('referer_domain', 'not like', '%127.0.0.1%')
+				->where(function($query) {
+					$query->where('referer_domain', 'like', '%www.baidu.com%')
+					->where('referer_domain', 'like', '%www.google.com%')
+					->where('referer_domain', 'like', '%www.haosou.com%')
+					->where('referer_domain', 'like', '%www.sogou.com%')
+					->where('referer_domain', 'like', '%www.bing.com%');
+				})
+				->select(RC_DB::raw('referer_domain, COUNT(*) AS access_count'), RC_DB::table('SUM(visit_times) AS visit_count'))
+				->groupby('referer_domain')->orderby('access_count', 'desc')->get();
+				
 			$arr1 = array();
 			$count = '';
 			if (!empty($data)) {
@@ -717,8 +796,7 @@ class admin_flow_stats extends ecjia_admin {
 	 * 获取地区分布数据
 	 * */
 	private function get_area_data() {
-		$db_stats = RC_Model::model('stats/stats_model');
-		
+		$db_stats = RC_DB::table('stats');
 		$type = !empty($_GET['type']) ? $_GET['type'] : '';
 	
 		if ($type == 1) {
@@ -737,21 +815,26 @@ class admin_flow_stats extends ecjia_admin {
 			$start_date = !empty($_GET['start_date']) ? RC_Time::local_strtotime($_GET['start_date']) : RC_Time::local_strtotime('-3 days');
 			$end_date 	= !empty($_GET['end_date'])   ? RC_Time::local_strtotime($_GET['end_date'])   : RC_Time::local_strtotime('today');
 		}
-		$where = "access_time >= '$start_date' AND access_time <= '$end_date'  AND area != '' ";
-		$area_data = $db_stats->stats_select($where, 'area, COUNT(*) AS access_count', 'area', array('access_count' => 'DESC'));
+// 		$where = "access_time >= '$start_date' AND access_time <= '$end_date'  AND area != '' ";
+// 		$area_data = $db_stats->stats_select($where, 'area, COUNT(*) AS access_count', 'area', array('access_count' => 'DESC'));
+		
+		$db_stats->where('access_time', '>=', $start_date)->where('access_time', '<=', $end_date)->where('area', '!=', '');
+		$area_data = $db_stats->select(RC_DB::raw('area, COUNT(*) AS access_count'))->groupby('area')->orderby('access_count', 'desc')->get();
+		
 		$count = count($area_data);
 		$page = new ecjia_page($count, 20, 5);
 	
-		$area_datas = $db_stats->stats_select($where, 'area, COUNT(*) AS access_count', 'area', array('access_count' => 'DESC'), $page->limit());
-		$row = array('item' => $area_datas, 'page' => $page->show(5), 'desc' => $page->page_desc(), 'current_page' => $page->current_page);
-		return $row;
+// 		$area_datas = $db_stats->stats_select($where, 'area, COUNT(*) AS access_count', 'area', array('access_count' => 'DESC'), $page->limit());
+		$area_datas = $db_stats->select(RC_DB::raw('area, COUNT(*) AS access_count'))->groupby('area')->orderby('access_count', 'desc')->take(20)->skip($page->start_id-1)->get();
+		
+		return array('item' => $area_datas, 'page' => $page->show(5), 'desc' => $page->page_desc(), 'current_page' => $page->current_page);
 	}
 	
 	/**
 	 * 按年份获取来源网站数据
 	 */
 	private function get_from_data() {
-		$db_stats = RC_Model::model('stats/stats_model');
+		$db_stats = RC_DB::table('stats');
 		
 		$type = !empty($_GET['type']) ? $_GET['type'] : '';
 		$from_type = !empty($_GET['from_type']) ? $_GET['from_type'] : 1;
@@ -773,10 +856,13 @@ class admin_flow_stats extends ecjia_admin {
 			$end_date 	= !empty($_GET['end_date'])   ? RC_Time::local_strtotime($_GET['end_date'])   : RC_Time::local_strtotime('today');
 		}
 	
-		$where = "access_time >= '$start_date' AND access_time <= '$end_date'";
+// 		$where = "access_time >= '$start_date' AND access_time <= '$end_date'";
+		$db_stats->where('access_time', '>=', $start_date)->where('access_time', '<=', $end_date);
 		//全部来源
 		if ($from_type == 1) {
-			$from_datas = $db_stats->stats_select($where, 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count', 'referer_domain', array('access_count' => 'DESC'));
+// 			$from_datas = $db_stats->stats_select($where, 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count', 'referer_domain', array('access_count' => 'DESC'));
+			$from_datas = $db_stats->select(RC_DB::raw('referer_domain, COUNT(*) AS access_count'), RC_DB::raw('SUM(visit_times) AS visit_count'))->groupby('referer_domain')->orderby('access_count', 'desc')->get();
+			
 			$count = '';
 			if (!empty($from_datas)) {
 				foreach ($from_datas as $key => $val) {
@@ -809,8 +895,21 @@ class admin_flow_stats extends ecjia_admin {
 			}
 			return array('item' => $arr);
 		} elseif ($from_type == 2) {
-			$where .= " AND referer_domain != '' AND referer_domain not like '%baidu%' AND referer_domain not like '%google%' AND referer_domain not like '%haosou%' AND referer_domain not like '%sogou%' AND referer_domain not like '%bing%' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%'";
-			$from_datas = $db_stats->stats_select($where, 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count', 'referer_domain', array('access_count' => 'DESC'));
+// 			$where .= " AND referer_domain != '' AND referer_domain not like '%baidu%' AND referer_domain not like '%google%' AND referer_domain not like '%haosou%' AND referer_domain not like '%sogou%' AND referer_domain not like '%bing%' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%'";
+// 			$from_datas = $db_stats->stats_select($where, 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count', 'referer_domain', array('access_count' => 'DESC'));
+			
+			$from_datas = $db_stats->where('referer_domain', '!=', '')
+				->where('referer_domain', 'not like', '%www.baidu.com%')
+				->where('referer_domain', 'not like', '%www.google.com%')
+				->where('referer_domain', 'not like', '%www.haosou.com%')
+				->where('referer_domain', 'not like', '%www.sogou.com%')
+				->where('referer_domain', 'not like', '%www.bing.com%')
+				->where('referer_domain', 'not like', '%localhost%')
+				->where('referer_domain', 'not like', '%127.0.0.1%')
+				->select(RC_DB::raw('referer_domain, COUNT(*) AS access_count'), RC_DB::raw('SUM(visit_times) AS visit_count'))
+				->groupby('referer_domain')->orderby('access_count', 'desc')->get();
+			
+			
 			$count = '';
 			if (!empty($from_datas)) {
 				$counts = 0;
@@ -821,7 +920,9 @@ class admin_flow_stats extends ecjia_admin {
 			}
 	
 			$page = new ecjia_page($count, 20, 5);
-			$arr1 = $db_stats->stats_select($where, 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count', 'referer_domain', array('access_count' => 'DESC'), $page->limit());
+// 			$arr1 = $db_stats->stats_select($where, 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count', 'referer_domain', array('access_count' => 'DESC'), $page->limit());
+			$arr1 = $db_stats->select(RC_DB::raw('referer_domain, COUNT(*) AS access_count'), RC_DB::raw('SUM(visit_times) AS visit_count'))->groupby('referer_domain')->orderby('access_count', 'desc')->take(20)->skip($page->start_id-1)->get();
+			
 			if (!empty($arr1)) {
 				foreach ($arr1 as $k => $v) {
 					$arr1[$k]['percent'] = (round($v['access_count'] / $counts,4))*100 .'%';
@@ -831,8 +932,22 @@ class admin_flow_stats extends ecjia_admin {
 			return array('item' => $arr1, 'page' => $page->show(5), 'desc' => $page->page_desc(), 'current_page' => $page->current_page);
 	
 		} elseif ($from_type == 3) {
-			$where .= " AND referer_domain != '' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%' AND (referer_domain like '%www.baidu.com%' or referer_domain like '%www.google.com%' or referer_domain like '%www.haosou.com%' or referer_domain like '%www.sogou.com%' or referer_domain like '%www.bing%') ";
-			$data = $db_stats->stats_select($where, 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count', 'referer_domain', array('access_count' => 'DESC'), 15);
+// 			$where .= " AND referer_domain != '' AND referer_domain not like '%localhost%' AND referer_domain not like '%127.0.0.1%' AND (referer_domain like '%www.baidu.com%' or referer_domain like '%www.google.com%' or referer_domain like '%www.haosou.com%' or referer_domain like '%www.sogou.com%' or referer_domain like '%www.bing%') ";
+// 			$data = $db_stats->stats_select($where, 'referer_domain, COUNT(*) AS access_count, SUM(visit_times) AS visit_count', 'referer_domain', array('access_count' => 'DESC'), 15);
+			
+			$data = $db_stats->where('referer_domain', '!=', '')
+				->where('referer_domain', 'not like', '%localhost%')
+				->where('referer_domain', 'not like', '%127.0.0.1%')
+				->where(function($query) {
+					$query->where('referer_domain', 'like', '%www.baidu.com%')
+					->where('referer_domain', 'like', '%www.google.com%')
+					->where('referer_domain', 'like', '%www.haosou.com%')
+					->where('referer_domain', 'like', '%www.sogou.com%')
+					->where('referer_domain', 'like', '%www.bing.com%');
+				})
+				->select(RC_DB::raw('referer_domain, COUNT(*) AS access_count'), RC_DB::raw('SUM(visit_times) AS visit_count'))
+				->groupby('referer_domain')->orderby('access_count', 'desc')->take(15)->get();
+			
 			$arr1 = array();
 			if (!empty($data)) {
 				$count = 0;

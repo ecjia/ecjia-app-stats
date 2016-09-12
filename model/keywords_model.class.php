@@ -12,14 +12,6 @@ class keywords_model extends Component_Model_Model {
 		$this->table_name = 'keywords';
 		parent::__construct();
 	}
-	
-	public function keywords_select($where, $field, $order=null, $limit=null) {
-		return $this->where($where)->field($field)->order($order)->limit($limit)->select();
-	}
-	
-	public function keywords_count($where) {
-		return $this->where($where)->count();
-	}
 }
 
 // end

@@ -7,13 +7,10 @@
 defined('IN_ECJIA') or exit('No permission resources.');
 
 class admin_keywords_stats extends ecjia_admin {
-	private $db_keywords;
-	
 	public function __construct() {
 		parent::__construct();
 		RC_Loader::load_app_func('global', 'stats');
-		
-		$this->db_keywords = RC_Model::model('stats/keywords_model');
+
 		/*加载所有全局 js/css */
 		RC_Script::enqueue_script('bootstrap-placeholder');
 		RC_Script::enqueue_script('jquery-validate');
@@ -68,7 +65,7 @@ class admin_keywords_stats extends ecjia_admin {
 			'SOSO'  		=> false
 		);
 		if (!empty($_GET['filter'])) {
-			$filter  = explode('.', rtrim($_GET['filter'],'.'));
+			$filter = explode('.', rtrim($_GET['filter'],'.'));
 			foreach ($filter AS $v) {
 				$keywords[$v] = true;
 			}
@@ -86,33 +83,17 @@ class admin_keywords_stats extends ecjia_admin {
 	
 	public function download() {
 		$this->admin_priv('keywords_stats', ecjia::MSGTYPE_JSON);
-
-		$start_date = empty($_GET['start_date']) ? RC_Time::local_date(ecjia::config('date_format'),RC_Time::local_strtotime('-7 days')) : $_GET['start_date'];
-		$end_date = empty($_GET['end_date']) ? RC_Time::local_date(ecjia::config('date_format'),RC_Time::local_strtotime('today')) : $_GET['end_date'];
-		$where = "date >= '$start_date' AND date <= '$end_date' ";
-		
 		$filename = mb_convert_encoding(RC_Lang::get('stats::statistic.tab_keywords'), "GBK", "UTF-8");
 		
-		if (!empty($_GET['filter'])) {
-			$filter  = explode('.', rtrim($_GET['filter'],'.'));
-			foreach ($filter AS $v) {
-				if ($v == 'ECJIA') {
-					$keywords[] = 'ecshop';
-				}
-				$keywords[] = $v;
-			}
-			$where .= ' AND '.db_create_in($keywords, 'searchengine');
-		}
-		
-		$keywords_list = $this->db_keywords->keywords_select($where, 'keyword, count, searchengine, date', array('count' => 'DESC'));
+		$keywords_list = $this->get_keywords_list(false);
 		
 		header("Content-type: application/vnd.ms-excel; charset=utf-8");
 		header("Content-Disposition: attachment; filename=$filename.xls");
 		
 		$data = RC_Lang::get('stats::statistic.keywords')."\t".RC_Lang::get('stats::statistic.searchengine')."\t".RC_Lang::get('stats::statistic.hits')."\t".RC_Lang::get('stats::statistic.date')."\t\n";
 		
-		if (!empty($keywords_list)) {
-			foreach ($keywords_list as $v) {
+		if (!empty($keywords_list['item'])) {
+			foreach ($keywords_list['item'] as $v) {
 				$data .= $v['keyword'] . "\t";
 				$data .= $v['searchengine'] . "\t";
 				$data .= $v['count'] . "\t";
@@ -126,26 +107,31 @@ class admin_keywords_stats extends ecjia_admin {
 	/**
 	 * 获取数据
 	 */
-	private function get_keywords_list() {
-		$db_keywords = RC_Model::model('stats/keywords_model');
+	private function get_keywords_list($is_page = true) {
+		$db_keywords = RC_DB::table('keywords');
 		
 		$start_date = empty($_GET['start_date']) 	? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('-7 days')) : $_GET['start_date'];
 		$end_date 	= empty($_GET['end_date']) 		? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('today')) 	: $_GET['end_date'];
-		$where 		= "date >= '$start_date' AND date <= '$end_date' ";
-	
+		$db_keywords->where('date', '>=', $start_date)->where('date', '<=', $end_date);
+		
 		if (!empty($_GET['filter'])) {
-			$filter  = explode('.', rtrim($_GET['filter'],'.'));
+			$filter = explode('.', rtrim($_GET['filter'],'.'));
 			foreach ($filter AS $v) {
 				if ($v == 'ECJIA') {
 					$keywords[] = 'ecshop';
 				}
 				$keywords[] = $v;
 			}
-			$where .= ' AND '.db_create_in($keywords, 'searchengine');
+			$db_keywords->whereIn('searchengine', $keywords);
 		}
-		$count = $db_keywords->keywords_count($where);
+		$count = $db_keywords->count();
 		$page = new ecjia_page($count, 20, 5);
-		$data = $db_keywords->keywords_select($where, 'keyword, count, searchengine, date', array('count' => 'DESC'), $page->limit());
+		$db_keywords->select('keyword', 'count', 'searchengine', 'date')->orderby('count', 'desc');
+		
+		if ($is_page) {
+			$db_keywords->take(20)->skip($page->start_id-1);
+		}
+		$data = $db_keywords->get();
 	
 		return array('item' => $data, 'page' => $page->show(5), 'desc' => $page->page_desc());
 	}

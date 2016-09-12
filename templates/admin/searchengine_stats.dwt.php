@@ -25,8 +25,8 @@
 	<div class="span12">
 		<div class="tabbable">
 			<ul class="nav nav-tabs">
-				<li {if $type eq 2}class="active"{/if}><a class="data-pjax" href='{url path="stats/admin_searchengine_stats/init" args="type=2"}'>{lang key='stats::statistic.today'}</a></li>
-				<li {if $type eq 1}class="active"{/if}><a class="data-pjax" href='{url path="stats/admin_searchengine_stats/init" args="type=1"}'>{lang key='stats::statistic.yesterday'}</a></li>
+				<li {if $type eq 1}class="active"{/if}><a class="data-pjax" href='{url path="stats/admin_searchengine_stats/init" args="type=1"}'>{lang key='stats::statistic.today'}</a></li>
+				<li {if $type eq 2}class="active"{/if}><a class="data-pjax" href='{url path="stats/admin_searchengine_stats/init" args="type=2"}'>{lang key='stats::statistic.yesterday'}</a></li>
 				<li {if $type eq 3}class="active"{/if}><a class="data-pjax" href='{url path="stats/admin_searchengine_stats/init" args="type=3"}'>{lang key='stats::statistic.this_week'}</a></li>
 				<li {if $type eq 4}class="active"{/if}><a class="data-pjax" href='{url path="stats/admin_searchengine_stats/init" args="type=4"}'>{lang key='stats::statistic.this_month'}</a></li>
 			</ul>
@@ -47,7 +47,7 @@
 	</div>
 	<!-- {/if} -->
 	
-	<!-- 昨天 -->
+	<!-- 今天 -->
 	<!-- {if $type eq 1} -->
 	<div class="general_datas">
 		<div id="general_datas" data-url='{RC_Uri::url("stats/admin_searchengine_stats/get_chart_data","type=1")}'>
@@ -55,7 +55,7 @@
 		</div>
 	</div>
 	
-	<!-- 今天 -->
+	<!-- 昨天 -->
 	<!-- {elseif $type eq 2} -->
 	<div class="general_datas">
 		<div id="general_datas" data-url='{RC_Uri::url("stats/admin_searchengine_stats/get_chart_data","type=2")}'>
