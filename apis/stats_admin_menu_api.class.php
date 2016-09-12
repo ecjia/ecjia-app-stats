@@ -11,9 +11,7 @@ class stats_admin_menu_api extends Component_Event_Api {
 		$menus = ecjia_admin::make_admin_menu('13_stats', RC_Lang::get('stats::flow_stats.report_statistics'), '', 13);
 		
 		$submenus = array(
-			ecjia_admin::make_admin_menu('01_flow_stats', RC_Lang::get('stats::flow_stats.traffic_analysis'), RC_Uri::url('stats/admin_flow_stats/general_stats'), 1)->add_purview('flow_stats'),
-			ecjia_admin::make_admin_menu('02_searchengine_stats', RC_Lang::get('stats::statistic.searchengine'), RC_Uri::url('stats/admin_searchengine_stats/init'), 2)->add_purview('searchengine_stats'),
-			ecjia_admin::make_admin_menu('03_keywords_stats', RC_Lang::get('stats::statistic.search_keywords'), RC_Uri::url('stats/admin_keywords_stats/init'), 3)->add_purview('keywords_stats'),
+			ecjia_admin::make_admin_menu('01_keywords_stats', RC_Lang::get('stats::statistic.search_keywords'), RC_Uri::url('stats/admin_keywords_stats/init'), 1)->add_purview('keywords_stats'),
 		);
         $menus->add_submenu($submenus);
 		
