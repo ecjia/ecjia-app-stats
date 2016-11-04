@@ -16,7 +16,7 @@
 
 <div class="row-fluid">
 	<form action="{$search_action}" method="post" name="theForm">
-		<div class="row-fluid">
+		{if 0}<div class="row-fluid">
 			<div class="choose_list f_r">
 			<span class="f_r">{lang key='stats::statistic.result_filter'}</span>
 			<!-- {foreach from=$keywords key=sename item=val} -->
@@ -26,7 +26,7 @@
 				<span class="l_h25">{$sename}</span>
 			<!-- {/foreach} -->
 			</div>
-		</div>
+		</div>{/if}
 		<div class="row-fluid">
 			<div class="choose_list f_r">
 				<span class="f_r">{lang key='stats::statistic.start_date'}</span>
@@ -44,7 +44,7 @@
 		<thead>
 			<tr>
 				<th>{lang key='stats::statistic.keywords'}</th>
-				<th class="w150">{lang key='stats::statistic.list_searchengine'}</th>
+				{if 0}<th class="w150">{lang key='stats::statistic.list_searchengine'}</th>{/if}
 				<th class="w120">{lang key='stats::statistic.hits'}</th>
 				<th class="w100">{lang key='stats::statistic.date'}</th>
 			</tr>
@@ -53,7 +53,7 @@
 			<!-- {foreach from=$keywords_data.item item=list} -->
 			<tr>
 				<td>{$list.keyword}</td>
-				<td>{$list.searchengine}</td>
+				{if 0}<td>{$list.searchengine}</td>{/if}
 				<td>{$list.count}</td>
 				<td>{$list.date}</td>
 			</tr>

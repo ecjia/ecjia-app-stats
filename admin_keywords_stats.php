@@ -55,7 +55,7 @@ class admin_keywords_stats extends ecjia_admin {
 		$this->assign('start_date', $start_date);
 		$this->assign('end_date', $end_date);
 		
-		$keywords = array(
+		/* $keywords = array(
 			'ECJIA'  		=> false,
 			'MSLIVE'  		=> false,
 			'BAIDU'  		=> false,
@@ -71,7 +71,7 @@ class admin_keywords_stats extends ecjia_admin {
 			}
 			$this->assign('filter', $_GET['filter']);
 		}
-		$this->assign('keywords', $keywords);
+		$this->assign('keywords', $keywords); */
 		$this->assign('search_action', RC_Uri::url('stats/admin_keywords_stats/init'));
 		
 		$keywords_data = $this->get_keywords_list();
@@ -83,19 +83,20 @@ class admin_keywords_stats extends ecjia_admin {
 	
 	public function download() {
 		$this->admin_priv('keywords_stats', ecjia::MSGTYPE_JSON);
-		$filename = mb_convert_encoding(RC_Lang::get('stats::statistic.tab_keywords'), "GBK", "UTF-8");
+		$filename = mb_convert_encoding(RC_Lang::get('stats::statistic.tab_keywords').'_'.$_GET['start_date'].'-'.$_GET['end_date'], "GBK", "UTF-8");
 		
 		$keywords_list = $this->get_keywords_list(false);
 		
 		header("Content-type: application/vnd.ms-excel; charset=utf-8");
 		header("Content-Disposition: attachment; filename=$filename.xls");
 		
-		$data = RC_Lang::get('stats::statistic.keywords')."\t".RC_Lang::get('stats::statistic.searchengine')."\t".RC_Lang::get('stats::statistic.hits')."\t".RC_Lang::get('stats::statistic.date')."\t\n";
+		///* RC_Lang::get('stats::statistic.searchengine')."\t" */
+		$data = RC_Lang::get('stats::statistic.keywords')."\t".RC_Lang::get('stats::statistic.hits')."\t".RC_Lang::get('stats::statistic.date')."\t\n";
 		
 		if (!empty($keywords_list['item'])) {
 			foreach ($keywords_list['item'] as $v) {
 				$data .= $v['keyword'] . "\t";
-				$data .= $v['searchengine'] . "\t";
+				/* $data .= $v['searchengine'] . "\t"; */
 				$data .= $v['count'] . "\t";
 				$data .= $v['date'] . "\t\n";
 			}
@@ -114,7 +115,7 @@ class admin_keywords_stats extends ecjia_admin {
 		$end_date 	= empty($_GET['end_date']) 		? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('today')) 	: $_GET['end_date'];
 		$db_keywords->where('date', '>=', $start_date)->where('date', '<=', $end_date);
 		
-		if (!empty($_GET['filter'])) {
+		/* if (!empty($_GET['filter'])) {
 			$filter = explode('.', rtrim($_GET['filter'],'.'));
 			foreach ($filter AS $v) {
 				if ($v == 'ECJIA') {
@@ -123,17 +124,17 @@ class admin_keywords_stats extends ecjia_admin {
 				$keywords[] = $v;
 			}
 			$db_keywords->whereIn('searchengine', $keywords);
-		}
+		} */
 		$count = $db_keywords->count();
 		$page = new ecjia_page($count, 20, 5);
 		$db_keywords->select('keyword', 'count', 'searchengine', 'date')->orderby('count', 'desc');
 		
 		if ($is_page) {
-			$db_keywords->take(20)->skip($page->start_id-1);
+			$db_keywords->take($page->page_size)->skip($page->start_id-1);
 		}
 		$data = $db_keywords->get();
 	
-		return array('item' => $data, 'page' => $page->show(5), 'desc' => $page->page_desc());
+		return array('item' => $data, 'page' => $page->show(2), 'desc' => $page->page_desc());
 	}
 }
 
