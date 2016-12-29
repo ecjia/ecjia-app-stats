@@ -47,21 +47,16 @@ class mh_keywords_stats extends ecjia_merchant {
 			'<p><strong>' . RC_Lang::get('stats::statistic.more_info') . '</strong></p>' .
 			'<p>' . __('<a href="https://ecjia.com/wiki/帮助:ECJia智能后台:搜索引擎" target="_blank">'. RC_Lang::get('stats::statistic.about_keywords_help') .'</a>') . '</p>'
 		);
-		
 		$this->assign('ur_here', RC_Lang::get('stats::statistic.search_keywords'));
 		$this->assign('action_link', array('text' => RC_Lang::get('stats::statistic.down_search_stats'), 'href' => RC_Uri::url('stats/mh_keywords_stats/download')));
-
 		$start_date = !empty($_GET['start_date']) ? $_GET['start_date'] : RC_Time::local_date(ecjia::config('date_format'), strtotime('-7 days')-8*3600);
 		$end_date   = !empty($_GET['end_date']) ? $_GET['end_date'] : RC_Time::local_date(ecjia::config('date_format'));
 		$this->assign('start_date', $start_date);
 		$this->assign('end_date', $end_date);
-		
 		$this->assign('search_action', RC_Uri::url('stats/mh_keywords_stats/init'));
 		
 		$keywords_data = $this->get_keywords_list();
-// 		_dump($keywords_data,1);
 		$this->assign('keywords_data', $keywords_data);
-		
 		$this->display('keywords_stats.dwt');
 	}
 
@@ -100,10 +95,9 @@ class mh_keywords_stats extends ecjia_merchant {
 		$end_date 	= empty($_GET['end_date']) 		? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('today')) 	: $_GET['end_date'];
 		$db_keywords->where('date', '>=', $start_date)->where('date', '<=', $end_date);
 		
+		$db_keywords->select('keyword', 'count', 'date')->where('store_id', $_SESSION['store_id'])->orderby('count', 'desc');
 		$count = $db_keywords->count();
 		$page = new ecjia_merchant_page($count, $page_num, 5);
-		
-		$db_keywords->select('keyword', 'count', 'date')->where('store_id', $_SESSION['store_id'])->orderby('count', 'desc');
 		
 		if ($is_page) {
 			$db_keywords->take($page_num)->skip($page->current_page-1*$page_num);
