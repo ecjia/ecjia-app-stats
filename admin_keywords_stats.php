@@ -55,23 +55,6 @@ class admin_keywords_stats extends ecjia_admin {
 		$this->assign('start_date', $start_date);
 		$this->assign('end_date', $end_date);
 
-		/* $keywords = array(
-			'ECJIA'  		=> false,
-			'MSLIVE'  		=> false,
-			'BAIDU'  		=> false,
-			'GOOGLE' 		=> false,
-			'GOOGLE CHINA' 	=> false,
-			'CT114' 		=> false,
-			'SOSO'  		=> false
-		);
-		if (!empty($_GET['filter'])) {
-			$filter = explode('.', rtrim($_GET['filter'],'.'));
-			foreach ($filter AS $v) {
-				$keywords[$v] = true;
-			}
-			$this->assign('filter', $_GET['filter']);
-		}
-		$this->assign('keywords', $keywords); */
 		$this->assign('search_action', RC_Uri::url('stats/admin_keywords_stats/init'));
 
 		$keywords_data = $this->get_keywords_list();
@@ -90,13 +73,11 @@ class admin_keywords_stats extends ecjia_admin {
 		header("Content-type: application/vnd.ms-excel; charset=utf-8");
 		header("Content-Disposition: attachment; filename=$filename.xls");
 
-		///* RC_Lang::get('stats::statistic.searchengine')."\t" */
 		$data = RC_Lang::get('stats::statistic.keywords')."\t".RC_Lang::get('stats::statistic.hits')."\t".RC_Lang::get('stats::statistic.date')."\t\n";
 
 		if (!empty($keywords_list['item'])) {
 			foreach ($keywords_list['item'] as $v) {
 				$data .= $v['keyword'] . "\t";
-				/* $data .= $v['searchengine'] . "\t"; */
 				$data .= $v['count'] . "\t";
 				$data .= $v['date'] . "\t\n";
 			}
@@ -115,16 +96,6 @@ class admin_keywords_stats extends ecjia_admin {
 		$end_date 	= empty($_GET['end_date']) 		? RC_Time::local_date(ecjia::config('date_format'), RC_Time::local_strtotime('today')) 	: $_GET['end_date'];
 		$db_keywords->where('date', '>=', $start_date)->where('date', '<=', $end_date);
 
-		/* if (!empty($_GET['filter'])) {
-			$filter = explode('.', rtrim($_GET['filter'],'.'));
-			foreach ($filter AS $v) {
-				if ($v == 'ECJIA') {
-					$keywords[] = 'ecshop';
-				}
-				$keywords[] = $v;
-			}
-			$db_keywords->whereIn('searchengine', $keywords);
-		} */
 		$count = $db_keywords->count();
 		$page = new ecjia_page($count, 20, 5);
 		$db_keywords->select('keyword', 'count', 'searchengine', 'date')->orderby('count', 'desc');
