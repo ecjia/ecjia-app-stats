@@ -94,3 +94,5 @@ function sub_str($str, $length = 0, $append = true) {
 
 	return $newstr;
 }
+
+// end

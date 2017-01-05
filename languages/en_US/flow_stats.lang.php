@@ -99,4 +99,5 @@ return array(
 		'time_required'			=> 'The query time cannot be empty!',
 	),
 );
+
 //end

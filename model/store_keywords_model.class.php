@@ -1,8 +1,9 @@
 <?php
+defined('IN_ECJIA') or exit('No permission resources.');
+
 /**
  * 商家关键字模型
  */
-defined('IN_ECJIA') or exit('No permission resources.');
 class store_keywords_model extends Component_Model_Model {
 	public $table_name = '';
 	public $view = array();

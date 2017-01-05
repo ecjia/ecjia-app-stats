@@ -1,10 +1,11 @@
 <?php
+defined('IN_ECJIA') or exit('No permission resources.');
+
 /**
  * 关键字统计
  * @author wutifang
  *
 */
-defined('IN_ECJIA') or exit('No permission resources.');
 
 class admin_keywords_stats extends ecjia_admin {
 	public function __construct() {

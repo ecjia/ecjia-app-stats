@@ -1,8 +1,9 @@
 <?php
+defined('IN_ECJIA') or exit('No permission resources.');
+
 /**
  * 报表统计
  */
-defined('IN_ECJIA') or exit('No permission resources.');
 
 return array(
 	'identifier' 	=> 'ecjia.stats',

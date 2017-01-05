@@ -1,10 +1,11 @@
 <?php
+defined('IN_ECJIA') or exit('No permission resources.');
+
 /**
  * 关键字统计
  * @author wutifang
  * 
 */
-defined('IN_ECJIA') or exit('No permission resources.');
 
 class mh_keywords_stats extends ecjia_merchant {
 	public function __construct() {
@@ -59,7 +60,6 @@ class mh_keywords_stats extends ecjia_merchant {
 		$this->assign('keywords_data', $keywords_data);
 		$this->display('keywords_stats.dwt');
 	}
-
 	
 	public function download() {
 		$this->admin_priv('stats_search_keywords', ecjia::MSGTYPE_JSON);
