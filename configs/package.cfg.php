@@ -4,7 +4,6 @@ defined('IN_ECJIA') or exit('No permission resources.');
 /**
  * 报表统计
  */
-
 return array(
 	'identifier' 	=> 'ecjia.stats',
 	'directory' 	=> 'stats',

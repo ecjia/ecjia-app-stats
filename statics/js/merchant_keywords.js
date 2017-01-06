@@ -1,6 +1,5 @@
 // JavaScript Document
-;
-(function(app, $) {
+;(function(app, $) {
 	app.keywords = {
 		init : function() {
 			app.keywords.search();

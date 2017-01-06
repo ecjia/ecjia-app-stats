@@ -4,7 +4,6 @@ defined('IN_ECJIA') or exit('No permission resources.');
 /**
  * ECJIA Statistics language file
  */
-
 return array(
 	/* Count of visitor statistics */
 	'stats_off'		=> 'Web site traffic statistics have been closed. <BR>If necessary go to: System Setup -> Configuration -> Basic to open the site traffic statistics service.',

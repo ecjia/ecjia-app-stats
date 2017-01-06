@@ -1,6 +1,5 @@
 // JavaScript Document
-;
-(function(app, $) {
+;(function(app, $) {
 	app.chart = {
 		init : function() {
 			app.chart.general_data();
@@ -250,4 +249,5 @@
 		},
 	};
 })(ecjia.admin, jQuery);
+
 // end

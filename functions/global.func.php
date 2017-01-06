@@ -3,14 +3,13 @@ defined('IN_ECJIA') or exit('No permission resources.');
 
 /**
  * 取得图表颜色
- *
  * @access  public
  * @param   integer $n  颜色顺序
  * @return  void
  */
+ 
 /**
  * 创建像这样的查询: "IN('a','b')";
- *
  * @access   public
  * @param    mix      $item_list      列表数组或字符串
  * @param    string   $field_name     字段名称

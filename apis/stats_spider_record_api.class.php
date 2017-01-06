@@ -4,7 +4,6 @@ defined('IN_ECJIA') or exit('No permission resources.');
 /**
  * 后台菜单API
  * @author wutifang
- *
  */
 class stats_spider_record_api extends Component_Event_Api {
 	
@@ -20,7 +19,7 @@ class stats_spider_record_api extends Component_Event_Api {
                 'count' 		=> 1
             );
             $update_data = array(
-                'count' => `count` + 1
+                'count'         => `count` + 1
             );
             $db->auto_replace($insert_data, $update_data);
             return true;

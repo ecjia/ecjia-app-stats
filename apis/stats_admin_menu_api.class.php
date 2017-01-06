@@ -4,7 +4,6 @@ defined('IN_ECJIA') or exit('No permission resources.');
 /**
  * 后台菜单API
  * @author wutifang
- *
  */
 class stats_admin_menu_api extends Component_Event_Api {
 	

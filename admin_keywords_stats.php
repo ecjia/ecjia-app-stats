@@ -4,9 +4,7 @@ defined('IN_ECJIA') or exit('No permission resources.');
 /**
  * 关键字统计
  * @author wutifang
- *
 */
-
 class admin_keywords_stats extends ecjia_admin {
 	public function __construct() {
 		parent::__construct();
@@ -67,6 +65,7 @@ class admin_keywords_stats extends ecjia_admin {
 
 	public function download() {
 		$this->admin_priv('keywords_stats', ecjia::MSGTYPE_JSON);
+		
 		$filename = mb_convert_encoding(RC_Lang::get('stats::statistic.tab_keywords').'_'.$_GET['start_date'].'至'.$_GET['end_date'], "GBK", "UTF-8");
 
 		$keywords_list = $this->get_keywords_list(false);

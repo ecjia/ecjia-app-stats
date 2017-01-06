@@ -4,7 +4,6 @@ defined('IN_ECJIA') or exit('No permission resources.');
 /**
  * 更新商店关键字
  * @author huangyuyuan@ecmoban.com
- *
  */
 class stats_update_store_keywords_api extends Component_Event_Api {
 	/*
@@ -21,9 +20,9 @@ class stats_update_store_keywords_api extends Component_Event_Api {
 	    $date = RC_Time::local_date('Y-m-d');
 	    
 	    $db_store_keywords = RC_DB::table('store_keywords')
-    	    ->where('store_id', $options['store_id'])
-    	    ->where('keyword', $options['keywords'])
-    	    ->where('date', $date);
+                    	    ->where('store_id', $options['store_id'])
+                    	    ->where('keyword', $options['keywords'])
+                    	    ->where('date', $date);
 	    
 	    $info = $db_store_keywords->first();
 	    
@@ -34,7 +33,7 @@ class stats_update_store_keywords_api extends Component_Event_Api {
 	    } else {
 	        //insert
 	        $data = array(
-	            'date' => $date,
+	            'date'     => $date,
 	            'store_id' => $options['store_id'],
 	            'keyword'  => $options['keywords'],
 	            'count'    => 1,

@@ -1,6 +1,5 @@
 // JavaScript Document
-;
-(function(app, $) {
+;(function(app, $) {
 	app.general_stats = {
 		init : function() {
 			app.general_stats.searchForm();
@@ -64,4 +63,5 @@
 		}
 	};
 })(ecjia.admin, jQuery);
+
 // end

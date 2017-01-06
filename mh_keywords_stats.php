@@ -4,9 +4,7 @@ defined('IN_ECJIA') or exit('No permission resources.');
 /**
  * 关键字统计
  * @author wutifang
- * 
 */
-
 class mh_keywords_stats extends ecjia_merchant {
 	public function __construct() {
 		parent::__construct();

@@ -4,7 +4,6 @@ defined('IN_ECJIA') or exit('No permission resources.');
 /**
  * ECJIA Traffic statistics language files
  */
-
 return array(
 	'tab_general'	=> 'General Visitors Count',
 	'tab_area'		=> 'Area',
