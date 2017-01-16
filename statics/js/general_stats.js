@@ -7,7 +7,8 @@
         },
         searchForm: function () {
             $(".year_date").datepicker({
-                format: "yyyy"
+                format: "yyyy",
+                container : '.main_content',
             });
             
             $('.screen-btn').on('click', function (e) {
@@ -31,7 +32,8 @@
         
         selectForm: function () {
             $(".month_date").datepicker({
-                format: "yyyy-mm"
+                format: "yyyy-mm",
+                container : '.main_content',
             });
             
             $('.screen-btn1').on('click', function (e) {
