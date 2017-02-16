@@ -78,7 +78,7 @@ class mh_keywords_stats extends ecjia_merchant {
 	}
 	
 	public function init() {
-		$this->admin_priv('stats_search_keywords', ecjia::MSGTYPE_JSON);
+		$this->admin_priv('stats_search_keywords');
 		
 		ecjia_merchant_screen::get_current_screen()->add_nav_here(new admin_nav_here('报表统计', RC_Uri::url('stats/mh_keywords_stats/init')));
 		ecjia_merchant_screen::get_current_screen()->add_nav_here(new admin_nav_here(RC_Lang::get('stats::statistic.search_keywords')));

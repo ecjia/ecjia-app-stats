@@ -76,7 +76,7 @@ class admin_keywords_stats extends ecjia_admin {
 	}
 
 	public function init() {
-		$this->admin_priv('keywords_stats', ecjia::MSGTYPE_JSON);
+		$this->admin_priv('keywords_stats');
 
 		ecjia_screen::get_current_screen()->add_nav_here(new admin_nav_here(RC_Lang::get('stats::statistic.search_keywords')));
 		ecjia_screen::get_current_screen()->add_help_tab(array(
