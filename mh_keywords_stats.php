@@ -93,14 +93,17 @@ class mh_keywords_stats extends ecjia_merchant {
 		);
 		$this->assign('ur_here', RC_Lang::get('stats::statistic.search_keywords'));
 		$this->assign('action_link', array('text' => RC_Lang::get('stats::statistic.down_search_stats'), 'href' => RC_Uri::url('stats/mh_keywords_stats/download')));
+		
 		$start_date = !empty($_GET['start_date']) ? $_GET['start_date'] : RC_Time::local_date(ecjia::config('date_format'), strtotime('-7 days')-8*3600);
 		$end_date   = !empty($_GET['end_date']) ? $_GET['end_date'] : RC_Time::local_date(ecjia::config('date_format'));
+		
 		$this->assign('start_date', $start_date);
 		$this->assign('end_date', $end_date);
 		$this->assign('search_action', RC_Uri::url('stats/mh_keywords_stats/init'));
 		
 		$keywords_data = $this->get_keywords_list();
 		$this->assign('keywords_data', $keywords_data);
+		
 		$this->display('keywords_stats.dwt');
 	}
 	
