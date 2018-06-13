@@ -2,9 +2,9 @@
 
 namespace Ecjia\App\Stats;
 
-use Royalcms\Component\App\AppServiceProvider;
+use Royalcms\Component\App\AppParentServiceProvider;
 
-class StatsServiceProvider extends  AppServiceProvider
+class StatsServiceProvider extends  AppParentServiceProvider
 {
     
     public function boot()
