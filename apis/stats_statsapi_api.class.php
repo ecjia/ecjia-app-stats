@@ -72,11 +72,11 @@ class stats_statsapi_api extends Component_Event_Api {
 			$stats_data = array(
 					'visit_times'=> 1,
 					'access_time'=> $time,
-					'ip_address' => $ip_address,
-					'system'     => $system,
-					'browser'	 => $browser,
-					'area'		 => $area,
-					'access_url' => $access_url,
+					'ip_address' => empty($ip_address) ? '' : $ip_address,
+					'system'     => empty($system) ? '' : $system,
+					'browser'	 => empty($browser) ? '' : $browser,
+					'area'		 => empty($area) ? '' : $area,
+					'access_url' => empty($access_url) ? '' : $access_url,
 			);
 			RC_DB::table('stats')->insert($stats_data);
 			$_SESSION['stats_expire'] = $time + 10800;
