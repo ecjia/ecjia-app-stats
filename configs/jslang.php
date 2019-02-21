@@ -44,29 +44,58 @@
 //
 //  ---------------------------------------------------------------------------------
 //
-defined('IN_ECJIA') or exit('No permission resources.');
 
 /**
- * 后台菜单API
- * @author wutifang
+ * js语言包设置
  */
-class stats_admin_menu_api extends Component_Event_Api {
-	
-	public function call(&$options) {
-		$menus = ecjia_admin::make_admin_menu('13_stats', __('报表统计', 'stats'), '', 13);
-		
-		$submenus = array(
-			ecjia_admin::make_admin_menu('01_keywords_stats', __('搜索关键字', 'stats'), RC_Uri::url('stats/admin_keywords_stats/init'), 1)->add_purview('keywords_stats'),
-		);
-        $menus->add_submenu($submenus);
-		
-        $menus = RC_Hook::apply_filters('stats_admin_menu_api', $menus);
-		
-        if ($menus->has_submenus()) {
-            return $menus;
-        }
-        return false;
-	}
-}
 
-// end
+defined('IN_ECJIA') or exit('No permission resources.');
+
+return array(
+    //stats
+    'flow_stats_page' =>array(
+        'start_date_required'	=> __('查询的开始时间不能为空！', 'stats'),
+        'end_date_required'		=> __('查询的结束时间不能为空！', 'stats'),
+        'start_lt_end_date'		=> __('查询的开始时间不能超于结束时间！', 'stats'),
+        'range_error'			=> __('非常抱歉，时间查询范围不能超出90天！', 'stats'),
+        'no_records'			=> __('没有找到任何记录', 'stats'),
+        'month_list' 			=> array(
+            __('一月', 'stats'),
+            __('二月', 'stats'),
+            __('三月', 'stats'),
+            __('四月', 'stats'),
+            __('五月', 'stats'),
+            __('六月', 'stats'),
+            __('七月', 'stats'),
+            __('八月', 'stats'),
+            __('九月', 'stats'),
+            __('十月', 'stats'),
+            __('十一月', 'stats'),
+            __('十二月', 'stats')
+        ),
+        'times'					=> __('次', 'stats'),
+        'area_percent'			=> __('地区分布百分比', 'stats'),
+        'from_percent'			=> __('来源网站百分比', 'stats'),
+        'from_type_required'	=> __('请选择来源类型！', 'stats'),
+        'time_required'			=> __('查询的时间不能为空！', 'stats'),
+    ),
+
+    'statistic_page' =>array(
+        'start_date_required'	=> __('查询的开始时间不能为空！', 'stats'),
+        'end_date_required'		=> __('查询的结束时间不能为空！', 'stats'),
+        'start_lt_end_date'		=> __('查询的开始时间不能超于结束时间！', 'stats'),
+        'no_records'			=> __('没有找到任何记录', 'stats'),
+        'day_list'				=> array(
+            __('星期一', 'stats'),
+            __('星期二', 'stats'),
+            __('星期三', 'stats'),
+            __('星期四', 'stats'),
+            __('星期五', 'stats'),
+            __('星期六', 'stats'),
+            __('星期日', 'stats')
+        ),
+        'times'					=> __('次', 'stats'),
+    ),
+
+);
+//end
